@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pluginMetaData path="bitdreamit-astm-e1394-datatype"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="plugin.xsd">
+    <name>ASTM E1394 Data Type (bitdreamit)</name>
+    <author>Bit Dream IT</author>
+    <pluginVersion>1.0.0</pluginVersion>
+    <mirthVersion>4.x</mirthVersion>
+    <url>https://bitdreamit.com</url>
+    <description>ASTM E1394 record-level parser/serializer (H/P/O/R/C/Q/M/L). Transport-agnostic.</description>
+    <clientClasses>
+        <clientClass class="com.bitdreamit.connect.plugins.datatypes.astm.client.ASTME1394DataTypeClientPlugin">
+            <library path="bitdreamit-astm-e1394-datatype-client.jar" type="CLIENT" />
+        </clientClass>
+    </clientClasses>
+</pluginMetaData>
