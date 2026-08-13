@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataType>
+    <name>ASTM E1394</name>
+    <description>BitDreamIT ASTM E1394-97 with strict validation, automatic response generation (ACK/NAK/AR), field-level data type validation, control ID deduplication tracking, batch scripting, template engine, repeat field handling, and manufacturer extension support. Open source by Kimi AI.</description>
+    <clientClassName>com.bitdreamit.mirth.labextensions.astme1394datatype.AstmE1394DataTypeClientPlugin</clientClassName>
+    <serverClassName>com.bitdreamit.mirth.labextensions.astme1394datatype.AstmE1394DataTypeServerPlugin</serverClassName>
+    <sharedClassName>com.bitdreamit.mirth.labextensions.astme1394datatype.AstmE1394DataTypeProperties</sharedClassName>
+    <library path="astm-e1394-datatype-shared.jar" type="SHARED"/>
+    <library path="astm-e1394-datatype-server.jar" type="SERVER"/>
+    <library path="astm-e1394-datatype-client.jar" type="CLIENT"/>
+</dataType>
