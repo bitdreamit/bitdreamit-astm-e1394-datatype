@@ -1,69 +1,38 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.mirth.astm.e1394.server;
 
-import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394Constants;
-import com.mirth.connect.model.ExtensionPermission;
-import com.mirth.connect.plugins.DataTypeServerPlugin;
-import com.mirth.connect.model.datatype.DataTypeProperties;
+import java.io.InputStream;
+
+import com.mirth.connect.donkey.server.channel.SourceConnector;
+import com.mirth.connect.donkey.server.message.AutoResponder;
+import com.mirth.connect.donkey.server.message.ResponseValidator;
+import com.mirth.connect.donkey.server.message.batch.BatchAdaptorFactory;
+import com.mirth.connect.donkey.server.message.batch.BatchStreamReader;
+import com.mirth.connect.model.datatype.DataTypeDelegate;
+import com.mirth.connect.model.datatype.ResponseGenerationProperties;
+import com.mirth.connect.model.datatype.ResponseValidationProperties;
 import com.mirth.connect.model.datatype.SerializationProperties;
-import com.mirth.connect.model.datatype.DeserializationProperties;
-import com.mirth.connect.model.datatype.BatchProperties;
-import com.mirth.connect.model.datatype.BatchAdaptorFactory;
-import com.mirth.connect.model.converters.IMessageSerializer;
-import java.util.Map;
-import java.util.Properties;
+import com.mirth.connect.model.datatype.SerializerProperties;
+import com.mirth.connect.model.transmission.TransmissionModeProperties;
+import com.mirth.connect.plugins.DataTypeServerPlugin;
 
 public class ASTME1394DataTypeServerPlugin extends DataTypeServerPlugin {
+    private DataTypeDelegate dataTypeDelegate = new ASTME1394DataTypeDelegate();
 
-    @Override
-    public void init(Properties properties) {}
+    @Override public String getPluginPointName() { return dataTypeDelegate.getName(); }
+    @Override public void start() {}
+    @Override public void stop() {}
+    @Override protected DataTypeDelegate getDataTypeDelegate() { return dataTypeDelegate; }
 
-    @Override
-    public void update(Properties properties) {}
-
-    @Override
-    public Properties getDefaultProperties() {
-        return new Properties();
+    @Override public AutoResponder getAutoResponder(SerializationProperties sp, ResponseGenerationProperties gp) {
+        return new ASTME1394AutoResponder(sp, gp);
     }
-
-    @Override
-    public ExtensionPermission[] getExtensionPermissions() {
-        return new ExtensionPermission[0];
+    @Override public ResponseValidator getResponseValidator(SerializationProperties sp, ResponseValidationProperties vp) {
+        return new ASTME1394ResponseValidator(sp, vp);
     }
-
-    @Override
-    public Map<String, Object> getObjectsForSwaggerExamples() {
-        return null;
+    @Override public BatchAdaptorFactory getBatchAdaptorFactory(SourceConnector sc, SerializerProperties p) {
+        return new ASTME1394BatchAdaptorFactory(sc, p);
     }
-
-    @Override
-    public String getPluginPointName() {
-        return ASTME1394Constants.PLUGIN_POINT_NAME;
-    }
-
-    @Override
-    public void start() {}
-
-    @Override
-    public void stop() {}
-
-    @Override
-    public IMessageSerializer getSerializer(SerializationProperties serializationProperties,
-                                             DeserializationProperties deserializationProperties) {
-        return new ASTME1394MessageSerializer(serializationProperties, deserializationProperties);
-    }
-
-    @Override
-    public BatchAdaptorFactory getBatchAdaptorFactory() {
-        return new ASTME1394BatchAdaptorFactory();
-    }
-
-    @Override
-    public BatchProperties getDefaultBatchProperties() {
-        return new ASTME1394BatchProperties();
-    }
-
-    @Override
-    public DataTypeProperties getDefaultDataTypeProperties() {
-        return new ASTME1394DataTypeProperties();
+    @Override public BatchStreamReader getBatchStreamReader(InputStream is, TransmissionModeProperties p) {
+        return new ASTME1394BatchStreamReader(is);
     }
 }

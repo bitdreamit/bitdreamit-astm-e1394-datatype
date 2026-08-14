@@ -1,39 +1,23 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.mirth.astm.e1394.server;
 
-import com.mirth.connect.model.datatype.BatchAdaptor;
-import com.mirth.connect.model.datatype.BatchAdaptorFactory;
-import com.mirth.connect.model.datatype.DataTypeProperties;
-import java.util.ArrayList;
-import java.util.List;
+import com.mirth.connect.donkey.server.channel.SourceConnector;
+import com.mirth.connect.donkey.server.message.batch.BatchAdaptor;
+import com.mirth.connect.donkey.server.message.batch.BatchMessageException;
+import com.mirth.connect.donkey.server.message.batch.BatchMessageSource;
+import com.mirth.connect.model.datatype.SerializerProperties;
 
-public class ASTME1394BatchAdaptor implements BatchAdaptor {
-
-    private ASTME1394BatchProperties props;
-
-    public ASTME1394BatchAdaptor(ASTME1394BatchProperties props) {
-        this.props = props;
+public class ASTME1394BatchAdaptor extends BatchAdaptor {
+    private SerializerProperties properties;
+    public ASTME1394BatchAdaptor(SourceConnector sourceConnector, BatchMessageSource batchMessageSource, SerializerProperties properties) {
+        super(sourceConnector, batchMessageSource);
+        this.properties = properties;
     }
-
-    @Override
-    public List<String> getMessages(String source) throws Exception {
-        List<String> messages = new ArrayList<>();
-        if ("H_L_BOUNDARY".equals(props.getBatchSplitType())) {
-            StringBuilder current = new StringBuilder();
-            String[] lines = source.split("\r\n|\r|\n");
-            for (String line : lines) {
-                if (line.trim().isEmpty()) continue;
-                current.append(line).append("\r");
-                if (line.startsWith("L|")) {
-                    messages.add(current.toString());
-                    current = new StringBuilder();
-                }
-            }
-            if (current.length() > 0) {
-                messages.add(current.toString());
-            }
-        } else {
-            messages.add(source);
-        }
-        return messages;
+    @Override public String getMessage() throws BatchMessageException {
+        try {
+            byte[] bytes = batchMessageSource.getNextMessage();
+            if (bytes == null) return null;
+            return new String(bytes, "UTF-8");
+        } catch (Exception e) { throw new BatchMessageException("Failed to read ASTM batch message", e); }
     }
+    @Override public void cleanup() {}
 }

@@ -1,14 +1,19 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.client;
+package com.bitdreamit.mirth.astm.e1394.client;
 
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
-import com.mirth.connect.client.ui.components.MirthTextField;
+import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.components.MirthCheckBox;
-import com.mirth.connect.model.datatype.DataTypeProperties;
-import com.bitdreamit.connect.plugins.datatypes.astm.server.*;
+import com.mirth.connect.client.ui.components.MirthTextField;
+
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
+import java.util.prefs.Preferences;
+
+import net.miginfocom.swing.MigLayout;
 
 public class ASTME1394DataTypeSettingsPanel extends AbstractSettingsPanel {
+    private static final String PREFIX = "com.bitdreamit.astm.e1394.";
 
     private MirthTextField fieldDelimiterField;
     private MirthTextField repeatDelimiterField;
@@ -16,96 +21,98 @@ public class ASTME1394DataTypeSettingsPanel extends AbstractSettingsPanel {
     private MirthTextField escapeCharacterField;
     private MirthCheckBox deriveFromHeaderCheckBox;
     private MirthCheckBox strictValidationCheckBox;
+    private MirthCheckBox stripASTM1381CharsCheckBox;
+    private MirthCheckBox convertLineBreaksCheckBox;
+    private MirthCheckBox useFieldRepetitionsCheckBox;
+    private MirthCheckBox useSubcomponentsCheckBox;
 
     public ASTME1394DataTypeSettingsPanel(String tabName) {
         super(tabName);
         initComponents();
         initLayout();
+        doRefresh();
     }
 
     private void initComponents() {
         fieldDelimiterField = new MirthTextField();
-        fieldDelimiterField.setToolTipText("Field delimiter (default: |)");
         repeatDelimiterField = new MirthTextField();
-        repeatDelimiterField.setToolTipText("Repeat delimiter (default: \\)");
         componentDelimiterField = new MirthTextField();
-        componentDelimiterField.setToolTipText("Component delimiter (default: ^)");
         escapeCharacterField = new MirthTextField();
-        escapeCharacterField.setToolTipText("Escape character (default: &)");
-        deriveFromHeaderCheckBox = new MirthCheckBox("Derive delimiters from Header record (H|field2)");
-        deriveFromHeaderCheckBox.setToolTipText("Read delimiter definitions from the message Header record at runtime");
-        strictValidationCheckBox = new MirthCheckBox("Use strict validation");
-        strictValidationCheckBox.setToolTipText("Fail on malformed records; unchecked = log and continue");
+        deriveFromHeaderCheckBox = new MirthCheckBox();
+        strictValidationCheckBox = new MirthCheckBox();
+        stripASTM1381CharsCheckBox = new MirthCheckBox();
+        convertLineBreaksCheckBox = new MirthCheckBox();
+        useFieldRepetitionsCheckBox = new MirthCheckBox();
+        useSubcomponentsCheckBox = new MirthCheckBox();
+
+        fieldDelimiterField.setText("|");
+        repeatDelimiterField.setText("\\");
+        componentDelimiterField.setText("^");
+        escapeCharacterField.setText("&");
+        stripASTM1381CharsCheckBox.setSelected(true);
+        convertLineBreaksCheckBox.setSelected(true);
+        useFieldRepetitionsCheckBox.setSelected(true);
+        useSubcomponentsCheckBox.setSelected(true);
     }
 
     private void initLayout() {
-        setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        setBackground(Color.WHITE);
+        setLayout(new MigLayout("insets 12, fillx, wrap 2", "[right][left,grow]", ""));
 
-        gbc.gridx = 0; gbc.gridy = 0;
-        add(new JLabel("Field Delimiter:"), gbc);
-        gbc.gridx = 1;
-        add(fieldDelimiterField, gbc);
+        JPanel panel = new JPanel(new MigLayout("insets 12, fillx, wrap 2", "[right][left,grow]"));
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(204, 204, 204)),
+            "ASTM E1394 Defaults", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION,
+            new Font("Tahoma", Font.BOLD, 11)));
 
-        gbc.gridx = 0; gbc.gridy = 1;
-        add(new JLabel("Repeat Delimiter:"), gbc);
-        gbc.gridx = 1;
-        add(repeatDelimiterField, gbc);
+        panel.add(new JLabel("Field Delimiter:"));       panel.add(fieldDelimiterField, "w 50!");
+        panel.add(new JLabel("Repeat Delimiter:"));      panel.add(repeatDelimiterField, "w 50!");
+        panel.add(new JLabel("Component Delimiter:"));   panel.add(componentDelimiterField, "w 50!");
+        panel.add(new JLabel("Escape Character:"));      panel.add(escapeCharacterField, "w 50!");
+        panel.add(new JLabel("Derive from Header:"));    panel.add(deriveFromHeaderCheckBox);
+        panel.add(new JLabel("Strict Validation:"));     panel.add(strictValidationCheckBox);
+        panel.add(new JLabel("Strip ASTM E1381 Chars:")); panel.add(stripASTM1381CharsCheckBox);
+        panel.add(new JLabel("Convert Line Breaks:"));   panel.add(convertLineBreaksCheckBox);
+        panel.add(new JLabel("Use Field Repetitions:")); panel.add(useFieldRepetitionsCheckBox);
+        panel.add(new JLabel("Use Subcomponents:"));     panel.add(useSubcomponentsCheckBox);
 
-        gbc.gridx = 0; gbc.gridy = 2;
-        add(new JLabel("Component Delimiter:"), gbc);
-        gbc.gridx = 1;
-        add(componentDelimiterField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 3;
-        add(new JLabel("Escape Character:"), gbc);
-        gbc.gridx = 1;
-        add(escapeCharacterField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
-        add(deriveFromHeaderCheckBox, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
-        add(strictValidationCheckBox, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 6; gbc.weighty = 1.0;
-        add(Box.createVerticalGlue(), gbc);
+        add(panel, "growx");
     }
 
-    @Override
-    public void setProperties(DataTypeProperties properties) {
-        ASTME1394SerializationProperties ser = (ASTME1394SerializationProperties) properties.getSerializationProperties();
-        ASTME1394DeserializationProperties des = (ASTME1394DeserializationProperties) properties.getDeserializationProperties();
-        fieldDelimiterField.setText(String.valueOf(ser.getFieldDelimiter()));
-        repeatDelimiterField.setText(String.valueOf(ser.getRepeatDelimiter()));
-        componentDelimiterField.setText(String.valueOf(ser.getComponentDelimiter()));
-        escapeCharacterField.setText(String.valueOf(ser.getEscapeCharacter()));
-        deriveFromHeaderCheckBox.setSelected(des.isDeriveDelimitersFromHeader());
-        strictValidationCheckBox.setSelected(ser.isUseStrictValidation());
+    @Override public void doRefresh() {
+        Preferences p = Preferences.userNodeForPackage(this.getClass());
+        fieldDelimiterField.setText(p.get(PREFIX + "fieldDelimiter", "|"));
+        repeatDelimiterField.setText(p.get(PREFIX + "repeatDelimiter", "\\"));
+        componentDelimiterField.setText(p.get(PREFIX + "componentDelimiter", "^"));
+        escapeCharacterField.setText(p.get(PREFIX + "escapeCharacter", "&"));
+        deriveFromHeaderCheckBox.setSelected(p.getBoolean(PREFIX + "deriveFromHeader", false));
+        strictValidationCheckBox.setSelected(p.getBoolean(PREFIX + "strictValidation", false));
+        stripASTM1381CharsCheckBox.setSelected(p.getBoolean(PREFIX + "stripASTM1381Chars", true));
+        convertLineBreaksCheckBox.setSelected(p.getBoolean(PREFIX + "convertLineBreaks", true));
+        useFieldRepetitionsCheckBox.setSelected(p.getBoolean(PREFIX + "useFieldRepetitions", true));
+        useSubcomponentsCheckBox.setSelected(p.getBoolean(PREFIX + "useSubcomponents", true));
     }
 
-    @Override
-    public DataTypeProperties getProperties() {
-        ASTME1394DataTypeProperties props = new ASTME1394DataTypeProperties();
-        ASTME1394SerializationProperties ser = (ASTME1394SerializationProperties) props.getSerializationProperties();
-        ASTME1394DeserializationProperties des = (ASTME1394DeserializationProperties) props.getDeserializationProperties();
-        String fd = fieldDelimiterField.getText();
-        if (fd != null && fd.length() > 0) ser.setFieldDelimiter(fd.charAt(0));
-        String rd = repeatDelimiterField.getText();
-        if (rd != null && rd.length() > 0) ser.setRepeatDelimiter(rd.charAt(0));
-        String cd = componentDelimiterField.getText();
-        if (cd != null && cd.length() > 0) ser.setComponentDelimiter(cd.charAt(0));
-        String ec = escapeCharacterField.getText();
-        if (ec != null && ec.length() > 0) ser.setEscapeCharacter(ec.charAt(0));
-        des.setFieldDelimiter(ser.getFieldDelimiter());
-        des.setRepeatDelimiter(ser.getRepeatDelimiter());
-        des.setComponentDelimiter(ser.getComponentDelimiter());
-        des.setEscapeCharacter(ser.getEscapeCharacter());
-        des.setDeriveDelimitersFromHeader(deriveFromHeaderCheckBox.isSelected());
-        ser.setUseStrictValidation(strictValidationCheckBox.isSelected());
-        return props;
+    @Override public boolean doSave() {
+        if (!isSingleChar(fieldDelimiterField.getText())) { PlatformUI.MIRTH_FRAME.alertError(this, "Field delimiter must be exactly 1 character."); fieldDelimiterField.requestFocus(); return false; }
+        if (!isSingleChar(repeatDelimiterField.getText())) { PlatformUI.MIRTH_FRAME.alertError(this, "Repeat delimiter must be exactly 1 character."); repeatDelimiterField.requestFocus(); return false; }
+        if (!isSingleChar(componentDelimiterField.getText())) { PlatformUI.MIRTH_FRAME.alertError(this, "Component delimiter must be exactly 1 character."); componentDelimiterField.requestFocus(); return false; }
+        if (!isSingleChar(escapeCharacterField.getText())) { PlatformUI.MIRTH_FRAME.alertError(this, "Escape character must be exactly 1 character."); escapeCharacterField.requestFocus(); return false; }
+
+        Preferences p = Preferences.userNodeForPackage(this.getClass());
+        p.put(PREFIX + "fieldDelimiter", fieldDelimiterField.getText());
+        p.put(PREFIX + "repeatDelimiter", repeatDelimiterField.getText());
+        p.put(PREFIX + "componentDelimiter", componentDelimiterField.getText());
+        p.put(PREFIX + "escapeCharacter", escapeCharacterField.getText());
+        p.putBoolean(PREFIX + "deriveFromHeader", deriveFromHeaderCheckBox.isSelected());
+        p.putBoolean(PREFIX + "strictValidation", strictValidationCheckBox.isSelected());
+        p.putBoolean(PREFIX + "stripASTM1381Chars", stripASTM1381CharsCheckBox.isSelected());
+        p.putBoolean(PREFIX + "convertLineBreaks", convertLineBreaksCheckBox.isSelected());
+        p.putBoolean(PREFIX + "useFieldRepetitions", useFieldRepetitionsCheckBox.isSelected());
+        p.putBoolean(PREFIX + "useSubcomponents", useSubcomponentsCheckBox.isSelected());
+        return true;
     }
+
+    private boolean isSingleChar(String s) { return s != null && s.length() == 1; }
 }

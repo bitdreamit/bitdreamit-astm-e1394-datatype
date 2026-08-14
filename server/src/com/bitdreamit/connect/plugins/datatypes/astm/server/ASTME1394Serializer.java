@@ -1,76 +1,47 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.mirth.astm.e1394.server;
 
-import org.w3c.dom.*;
+import org.apache.log4j.Logger;
 
-public class ASTME1394Serializer {
+import com.mirth.connect.model.converters.IMessageSerializer;
+import com.mirth.connect.model.datatype.SerializerProperties;
+import com.mirth.connect.model.util.MessageSerializerException;
 
-    private final ASTME1394SerializationProperties props;
+public class ASTME1394Serializer implements IMessageSerializer {
+    private Logger logger = Logger.getLogger(this.getClass());
+    private ASTME1394SerializationProperties serProps;
+    private ASTME1394DeserializationProperties deserProps;
 
-    public ASTME1394Serializer(ASTME1394SerializationProperties props) {
-        this.props = props;
+    public ASTME1394Serializer(SerializerProperties properties) {
+        this.serProps = (ASTME1394SerializationProperties) properties.getSerializationProperties();
+        this.deserProps = (ASTME1394DeserializationProperties) properties.getDeserializationProperties();
     }
 
-    public String fromXML(Document doc) {
-        char fieldDelim = props.getFieldDelimiter();
-        char repeatDelim = props.getRepeatDelimiter();
-        char componentDelim = props.getComponentDelimiter();
-        char escapeChar = props.getEscapeCharacter();
-        ASTME1394EscapeUtil esc = new ASTME1394EscapeUtil(escapeChar, fieldDelim, repeatDelim, componentDelim);
-
-        StringBuilder out = new StringBuilder();
-        Element root = doc.getDocumentElement();
-        NodeList records = root.getChildNodes();
-
-        for (int r = 0; r < records.getLength(); r++) {
-            Node recordNode = records.item(r);
-            if (recordNode.getNodeType() != Node.ELEMENT_NODE) continue;
-            Element recordEl = (Element) recordNode;
-
-            StringBuilder line = new StringBuilder(recordEl.getTagName());
-            NodeList fields = recordEl.getChildNodes();
-            for (int f = 0; f < fields.getLength(); f++) {
-                Node fieldNode = fields.item(f);
-                if (fieldNode.getNodeType() != Node.ELEMENT_NODE) continue;
-                line.append(fieldDelim);
-                line.append(serializeField((Element) fieldNode, repeatDelim, componentDelim, esc));
+    @Override
+    public String toXML(String source) throws MessageSerializerException {
+        try {
+            if (source == null) return null;
+            // DoS protection
+            if (deserProps != null && source.getBytes(serProps.getEncoding()).length > deserProps.getMaxMessageSize()) {
+                throw new MessageSerializerException("Message exceeds max size limit (" + deserProps.getMaxMessageSize() + " bytes)");
             }
-            out.append(line).append("\r");
+            return new ASTME1394ToXmlConverter(serProps, deserProps).convert(source);
+        } catch (Exception e) {
+            logger.error("ASTM to XML conversion failed", e);
+            throw new MessageSerializerException(e);
         }
-        return out.toString();
     }
 
-    private String serializeField(Element fieldEl, char repeatDelim, char componentDelim, ASTME1394EscapeUtil esc) {
-        NodeList repeatNodes = fieldEl.getElementsByTagName("Repeat");
-        if (repeatNodes.getLength() > 0) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < repeatNodes.getLength(); i++) {
-                if (i > 0) sb.append(repeatDelim);
-                sb.append(serializeComponents((Element) repeatNodes.item(i), componentDelim, esc));
-            }
-            return sb.toString();
+    @Override
+    public String fromXML(String source) throws MessageSerializerException {
+        try {
+            if (source == null) return null;
+            return new ASTME1394FromXmlConverter(serProps).convert(source);
+        } catch (Exception e) {
+            logger.error("XML to ASTM conversion failed", e);
+            throw new MessageSerializerException(e);
         }
-        return serializeComponents(fieldEl, componentDelim, esc);
     }
 
-    private String serializeComponents(Element container, char componentDelim, ASTME1394EscapeUtil esc) {
-        NodeList children = container.getChildNodes();
-        boolean hasElementChildren = false;
-        for (int i = 0; i < children.getLength(); i++) {
-            if (children.item(i).getNodeType() == Node.ELEMENT_NODE) { hasElementChildren = true; break; }
-        }
-        if (!hasElementChildren) {
-            String text = container.getTextContent();
-            return text == null ? "" : esc.escape(text);
-        }
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (int i = 0; i < children.getLength(); i++) {
-            Node n = children.item(i);
-            if (n.getNodeType() != Node.ELEMENT_NODE) continue;
-            if (!first) sb.append(componentDelim);
-            sb.append(esc.escape(n.getTextContent()));
-            first = false;
-        }
-        return sb.toString();
-    }
+    @Override public String toJSON(String source) { return null; }
+    @Override public String fromJSON(String source) { return null; }
 }
