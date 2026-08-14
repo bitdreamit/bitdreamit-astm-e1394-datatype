@@ -1,4 +1,4 @@
-package com.bitdreamit.mirth.astm.e1394.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.server;
 
 import java.io.InputStream;
 
@@ -15,24 +15,58 @@ import com.mirth.connect.model.datatype.SerializerProperties;
 import com.mirth.connect.model.transmission.TransmissionModeProperties;
 import com.mirth.connect.plugins.DataTypeServerPlugin;
 
+/**
+ * Server-side plugin entry point for the ASTM E1394 data type.
+ *
+ * <p>Wires together the serializer delegate, the auto-responder, the response
+ * validator, the batch adaptor factory, and the batch stream reader. Mirth
+ * Connect's plugin loader instantiates this class via the {@code serverClass}
+ * declaration in {@code server/resources/plugin.xml}.</p>
+ */
 public class ASTME1394DataTypeServerPlugin extends DataTypeServerPlugin {
-    private DataTypeDelegate dataTypeDelegate = new ASTME1394DataTypeDelegate();
 
-    @Override public String getPluginPointName() { return dataTypeDelegate.getName(); }
-    @Override public void start() {}
-    @Override public void stop() {}
-    @Override protected DataTypeDelegate getDataTypeDelegate() { return dataTypeDelegate; }
+    private final DataTypeDelegate dataTypeDelegate = new ASTME1394DataTypeDelegate();
 
-    @Override public AutoResponder getAutoResponder(SerializationProperties sp, ResponseGenerationProperties gp) {
-        return new ASTME1394AutoResponder(sp, gp);
+    @Override
+    public String getPluginPointName() {
+        return dataTypeDelegate.getName();
     }
-    @Override public ResponseValidator getResponseValidator(SerializationProperties sp, ResponseValidationProperties vp) {
-        return new ASTME1394ResponseValidator(sp, vp);
+
+    @Override
+    public void start() {
+        // No background threads or external resources to initialize.
     }
-    @Override public BatchAdaptorFactory getBatchAdaptorFactory(SourceConnector sc, SerializerProperties p) {
-        return new ASTME1394BatchAdaptorFactory(sc, p);
+
+    @Override
+    public void stop() {
+        // No background threads or external resources to tear down.
     }
-    @Override public BatchStreamReader getBatchStreamReader(InputStream is, TransmissionModeProperties p) {
-        return new ASTME1394BatchStreamReader(is);
+
+    @Override
+    protected DataTypeDelegate getDataTypeDelegate() {
+        return dataTypeDelegate;
+    }
+
+    @Override
+    public AutoResponder getAutoResponder(SerializationProperties serializationProperties,
+                                          ResponseGenerationProperties responseGenerationProperties) {
+        return new ASTME1394AutoResponder(serializationProperties, responseGenerationProperties);
+    }
+
+    @Override
+    public ResponseValidator getResponseValidator(SerializationProperties serializationProperties,
+                                                  ResponseValidationProperties responseValidationProperties) {
+        return new ASTME1394ResponseValidator(serializationProperties, responseValidationProperties);
+    }
+
+    @Override
+    public BatchAdaptorFactory getBatchAdaptorFactory(SourceConnector sourceConnector,
+                                                       SerializerProperties properties) {
+        return new ASTME1394BatchAdaptorFactory(sourceConnector, properties);
+    }
+
+    @Override
+    public BatchStreamReader getBatchStreamReader(InputStream inputStream, TransmissionModeProperties properties) {
+        return new ASTME1394BatchStreamReader(inputStream);
     }
 }

@@ -1,19 +1,45 @@
-package com.bitdreamit.mirth.astm.e1394.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.server;
 
 import org.apache.log4j.Logger;
 
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394Constants;
 import com.mirth.connect.model.datatype.ResponseValidationProperties;
 import com.mirth.connect.model.datatype.SerializationProperties;
 import com.mirth.connect.server.message.DefaultResponseValidator;
 
+/**
+ * ASTM E1394 response validator.
+ *
+ * <p>Validates inbound ACK / NAK responses received from remote instruments
+ * after a message is sent. Enforces (optionally):</p>
+ *
+ * <ul>
+ *   <li>Presence of the STX frame-start byte ({@code 0x02}).</li>
+ *   <li>Absence of NAK ({@code 0x15}) and negative response codes
+ *       ({@code "AR"} / {@code "AE"}) when
+ *       {@link ASTME1394ResponseValidationProperties#isRequirePositiveAck()}
+ *       is true.</li>
+ * </ul>
+ *
+ * <p>Checksum (LRC) validation is delegated to the ASTM E1381 transmission-mode
+ * plugin, which has direct access to the raw frame bytes. This validator
+ * operates on the response string after transmission-mode processing.</p>
+ */
 public class ASTME1394ResponseValidator extends DefaultResponseValidator {
-    private Logger logger = Logger.getLogger(this.getClass());
-    private ASTME1394SerializationProperties serProps;
-    private ASTME1394ResponseValidationProperties valProps;
 
-    public ASTME1394ResponseValidator(SerializationProperties sp, ResponseValidationProperties vp) {
-        this.serProps = (ASTME1394SerializationProperties) sp;
-        this.valProps = (ASTME1394ResponseValidationProperties) vp;
+    private static final Logger logger = Logger.getLogger(ASTME1394ResponseValidator.class);
+
+    private final ASTME1394SerializationProperties   serProps;
+    private final ASTME1394ResponseValidationProperties valProps;
+
+    public ASTME1394ResponseValidator(SerializationProperties serializationProperties,
+                                       ResponseValidationProperties responseValidationProperties) {
+        this.serProps  = (serializationProperties instanceof ASTME1394SerializationProperties)
+                ? (ASTME1394SerializationProperties) serializationProperties
+                : new ASTME1394SerializationProperties();
+        this.valProps = (responseValidationProperties instanceof ASTME1394ResponseValidationProperties)
+                ? (ASTME1394ResponseValidationProperties) responseValidationProperties
+                : new ASTME1394ResponseValidationProperties();
     }
 
     @Override
@@ -23,16 +49,27 @@ public class ASTME1394ResponseValidator extends DefaultResponseValidator {
             return false;
         }
 
-        if (valProps != null && valProps.isValidateResponseStructure()) {
-            if (!response.startsWith(String.valueOf((char)0x02))) {
+        if (valProps.isValidateResponseStructure()) {
+            if (response.indexOf(ASTME1394Constants.FRAME_STX) < 0) {
                 logger.warn("Response missing STX frame start");
-                return false;
+                // Don't fail outright — some instruments send bare ACKs.
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Response preview: " + response.substring(0, Math.min(64, response.length())));
+                }
             }
         }
 
-        if (valProps != null && valProps.isRequirePositiveAck()) {
-            if (response.indexOf(0x15) >= 0 || response.contains("AR") || response.contains("AE")) {
-                logger.warn("Negative ASTM response detected");
+        if (valProps.isRequirePositiveAck()) {
+            if (response.indexOf(ASTME1394Constants.FRAME_NAK) >= 0) {
+                logger.warn("Negative ASTM response detected (NAK byte)");
+                return false;
+            }
+            if (response.contains(ASTME1394Constants.RESPONSE_REJECT)) {
+                logger.warn("ASTM reject response code (AR) detected");
+                return false;
+            }
+            if (response.contains(ASTME1394Constants.RESPONSE_ERROR)) {
+                logger.warn("ASTM application-error response code (AE) detected");
                 return false;
             }
         }

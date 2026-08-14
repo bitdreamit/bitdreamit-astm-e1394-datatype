@@ -1,61 +1,129 @@
-package com.bitdreamit.mirth.astm.e1394.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.server;
 
 import org.apache.log4j.Logger;
 
-import com.bitdreamit.mirth.astm.e1394.shared.ASTME1394Constants;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394Constants;
 import com.mirth.connect.model.datatype.ResponseGenerationProperties;
 import com.mirth.connect.model.datatype.SerializationProperties;
 import com.mirth.connect.server.message.DefaultAutoResponder;
 
+/**
+ * ASTM E1394 auto-responder.
+ *
+ * <p>Constructs an ASTM E1381-framed ACK response for every inbound message
+ * received by the source connector. The response codes, sequence numbering,
+ * timestamp inclusion, and frame wrapping are all configurable through
+ * {@link ASTME1394ResponseGenerationProperties}.</p>
+ *
+ * <p>The LRC (Longitudinal Redundancy Check) byte is computed per ASTM E1381
+ * §6.3.2 by XOR-ing every byte of the payload (including ETX, excluding STX
+ * and the LRC byte itself).</p>
+ */
 public class ASTME1394AutoResponder extends DefaultAutoResponder {
-    private Logger logger = Logger.getLogger(this.getClass());
-    private ASTME1394SerializationProperties serProps;
-    private ASTME1394ResponseGenerationProperties genProps;
 
-    public ASTME1394AutoResponder(SerializationProperties sp, ResponseGenerationProperties gp) {
-        this.serProps = (ASTME1394SerializationProperties) sp;
-        this.genProps = (ASTME1394ResponseGenerationProperties) gp;
+    private static final Logger logger = Logger.getLogger(ASTME1394AutoResponder.class);
+
+    private final ASTME1394SerializationProperties   serProps;
+    private final ASTME1394ResponseGenerationProperties genProps;
+
+    public ASTME1394AutoResponder(SerializationProperties serializationProperties,
+                                   ResponseGenerationProperties responseGenerationProperties) {
+        this.serProps  = (serializationProperties instanceof ASTME1394SerializationProperties)
+                ? (ASTME1394SerializationProperties) serializationProperties
+                : new ASTME1394SerializationProperties();
+        this.genProps = (responseGenerationProperties instanceof ASTME1394ResponseGenerationProperties)
+                ? (ASTME1394ResponseGenerationProperties) responseGenerationProperties
+                : new ASTME1394ResponseGenerationProperties();
     }
 
     @Override
     public String getResponse(String message, String status, String destination) {
-        if (genProps == null) return ASTME1394Constants.RESPONSE_ACCEPT;
-
-        StringBuilder sb = new StringBuilder();
-
-        if (genProps.isWrapInASTMFrame()) {
-            char stx = 0x02, etx = 0x03, cr = 0x0D, lf = 0x0A;
-            String responseText;
-            if ("ERROR".equalsIgnoreCase(status)) {
-                responseText = genProps.getErrorResponseCode();
-            } else if ("REJECT".equalsIgnoreCase(status)) {
-                responseText = genProps.getRejectResponseCode();
-            } else {
-                responseText = genProps.getSuccessResponseCode();
-            }
-
-            String seq = genProps.isIncludeSequenceNumber() ? "1" : "";
-            String payload = seq + responseText;
-            if (genProps.isIncludeTimestamp()) {
-                payload += "|" + System.currentTimeMillis();
-            }
-            payload += etx;
-
-            char lrc = calculateLRC(payload);
-            sb.append(stx).append(payload).append(lrc).append(cr).append(lf);
-        } else {
-            sb.append(ASTME1394Constants.RESPONSE_ACCEPT);
+        if (genProps == null) {
+            return ASTME1394Constants.RESPONSE_ACCEPT;
         }
 
-        logger.debug("ASTM AutoResponse: " + sb.toString().replace("\r", "<CR>").replace("\n", "<LF>"));
+        StringBuilder sb = new StringBuilder(64);
+
+        if (genProps.isWrapInASTMFrame()) {
+            String responseCode;
+            if ("ERROR".equalsIgnoreCase(status)) {
+                responseCode = genProps.getErrorResponseCode();
+            } else if ("REJECT".equalsIgnoreCase(status)) {
+                responseCode = genProps.getRejectResponseCode();
+            } else {
+                responseCode = genProps.getSuccessResponseCode();
+            }
+
+            // Payload layout: [seq]<code>[|<timestamp>]<ETX>
+            // Sequence numbers in ASTM E1381 are 0-7.
+            String seq = genProps.isIncludeSequenceNumber() ? "1" : "";
+            StringBuilder payload = new StringBuilder();
+            payload.append(seq).append(responseCode);
+            if (genProps.isIncludeTimestamp()) {
+                payload.append('|').append(System.currentTimeMillis());
+            }
+            payload.append(ASTME1394Constants.FRAME_ETX);
+
+            byte lrc = calculateLRC(payload.toString(), serProps.getEncoding());
+
+            sb.append(ASTME1394Constants.FRAME_STX);
+            sb.append(payload);
+            sb.append((char) (lrc & 0xFF));
+            sb.append('\r').append('\n');
+        } else {
+            // Unwrapped: just emit the response code.
+            sb.append(genProps.getSuccessResponseCode());
+        }
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("ASTM AutoResponse: " + toDebugString(sb.toString()));
+        }
         return sb.toString();
     }
 
-    private char calculateLRC(String data) {
-        char lrc = 0;
-        for (int i = 0; i < data.length(); i++) {
-            lrc ^= data.charAt(i);
+    /**
+     * Compute the ASTM E1381 LRC over the payload string (which already
+     * includes the trailing ETX byte). Per the spec, STX is excluded, the
+     * LRC byte itself is excluded, and every byte between (including ETX)
+     * is XOR-ed together.
+     */
+    private byte calculateLRC(String payload, String encoding) {
+        byte[] bytes;
+        try {
+            bytes = payload.getBytes(encoding);
+        } catch (java.io.UnsupportedEncodingException e) {
+            bytes = payload.getBytes();
+        }
+        byte lrc = 0;
+        for (byte b : bytes) {
+            lrc ^= b;
         }
         return lrc;
+    }
+
+    /** Replace control characters with printable debug tokens for log output. */
+    private String toDebugString(String s) {
+        StringBuilder out = new StringBuilder(s.length() * 2);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case ASTME1394Constants.FRAME_STX: out.append("<STX>"); break;
+                case ASTME1394Constants.FRAME_ETX: out.append("<ETX>"); break;
+                case ASTME1394Constants.FRAME_ETB: out.append("<ETB>"); break;
+                case ASTME1394Constants.FRAME_EOT: out.append("<EOT>"); break;
+                case ASTME1394Constants.FRAME_ENQ: out.append("<ENQ>"); break;
+                case ASTME1394Constants.FRAME_ACK: out.append("<ACK>"); break;
+                case ASTME1394Constants.FRAME_NAK: out.append("<NAK>"); break;
+                case '\r': out.append("<CR>"); break;
+                case '\n': out.append("<LF>"); break;
+                default:
+                    if (c < 0x20 || c > 0x7E) {
+                        out.append(String.format("<0x%02X>", (int) c & 0xFF));
+                    } else {
+                        out.append(c);
+                    }
+            }
+        }
+        return out.toString();
     }
 }

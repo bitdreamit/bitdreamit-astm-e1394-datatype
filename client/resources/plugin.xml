@@ -4,10 +4,10 @@
     xsi:noNamespaceSchemaLocation="plugin.xsd">
     <name>ASTM E1394 Data Type (bitdreamit)</name>
     <author>Bit Dream IT</author>
-    <pluginVersion>1.0.0</pluginVersion>
+    <pluginVersion>1.1.0</pluginVersion>
     <mirthVersion>4.x</mirthVersion>
     <url>https://bitdreamit.com</url>
-    <description>ASTM E1394 record-level parser/serializer (H/P/O/R/C/Q/M/L). Transport-agnostic.</description>
+    <description>ASTM E1394-91/97 record-level parser/serializer (H/P/O/R/C/Q/M/L). Provides the Administrator UI settings panel for configuring default delimiters and parser options.</description>
     <clientClasses>
         <clientClass class="com.bitdreamit.connect.plugins.datatypes.astm.client.ASTME1394DataTypeClientPlugin">
             <library path="bitdreamit-astm-e1394-datatype-client.jar" type="CLIENT" />
