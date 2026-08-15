@@ -1,9 +1,183 @@
-# Production Notes — bitdreamit-astm-e1394-datatype v1.1.0
+# Production Notes — bitdreamit-astm-e1394-datatype v1.1.1
 
 This document records the production-grade fixes applied to the original
 v1.0.0 source tree. The original codebase had multiple critical inconsistencies
 that prevented compilation, broke round-trip serialization, and shipped with
-an unsafe build script. v1.1.0 resolves all of them.
+an unsafe build script. v1.1.0 resolved the parser / serializer / build
+issues; v1.1.1 fixes the remaining compile errors against the Mirth Connect
+4.x client + server API.
+
+## v1.1.1 — Mirth Connect 4.x API alignment
+
+The v1.1.0 source still produced 10 distinct compile errors when built
+against a stock Mirth Connect 4.4 / 4.5 distribution. Each error is
+documented below with its root cause and the fix that was applied.
+
+### 15. `ASTME1394DataTypeClientPlugin` — wrong parent class
+
+The class extended `com.mirth.connect.plugins.ClientPlugin` directly.
+That parent declares a single `ClientPlugin(String name)` constructor
+and exposes no `getSettingsPanel()` / `getSettingsPanelName()` hooks.
+The data-type framework instead expects plugins to extend
+`com.mirth.connect.plugins.DataTypeClientPlugin`, which is the class
+that adds the settings-panel contract.
+
+**Fix**: changed the parent to `DataTypeClientPlugin`, added a
+`ASTME1394DataTypeClientPlugin(String name)` constructor that calls
+`super(name)`, kept `@Override` on `getSettingsPanel()` (now valid
+because the parent declares it abstract), and removed the `@Override`
+annotation from `getSettingsPanelName()` (custom helper, not in the
+parent contract).
+
+### 16. `ASTME1394DataTypeSettingsPanel` — third-party layout / frame dependencies
+
+The settings panel used `net.miginfocom.swing.MigLayout` and
+`org.jdesktop.swingx.JXFrame` (via `PlatformUI.MIRTH_FRAME.alertError(...)`).
+Both require third-party jars that are not always present on the
+compile classpath:
+
+* `miglayout-swing.jar` ships only the Swing wrapper — the core
+  `net.miginfocom.layout.LC` class lives in a separate `miglayout-core`
+  jar that is typically missing.
+* `swingx.jar` (which provides `JXFrame`) is not declared in the
+  Mirth client library at all.
+
+**Fix**: rewrote the panel to use only standard JDK Swing —
+`GridBagLayout` for the form layout and `JOptionPane.showMessageDialog(...)`
+for validation alerts. The panel's behaviour is identical; the
+third-party dependencies are gone.
+
+### 17. `ASTME1394Serializer` — `MessageSerializerException` removed in Mirth 4.x
+
+The legacy `com.mirth.connect.model.util.MessageSerializerException`
+checked exception was removed from the Mirth Connect 4.x API. The
+`IMessageSerializer` interface methods no longer declare any checked
+exceptions. The v1.1.0 code still imported the type and declared
+`throws MessageSerializerException` on every method, which fails to
+compile.
+
+**Fix**: removed the import and all `throws` clauses. Failures are now
+wrapped into `RuntimeException` (matching the behaviour of Mirth's
+built-in HL7v2 / XML / JSON serializers). Also added the missing
+`getMetaDataFromMessage(String)` method required by the
+`IMessageSerializer` interface — it returns a small map containing the
+observed record-type letters and the configured encoding.
+
+### 18. `ASTME1394BatchAdaptorFactory` — wrong `createBatchAdaptor` signature
+
+In Mirth Connect 4.x `BatchAdaptorFactory.createBatchAdaptor` takes a
+`BatchRawMessage` (which wraps the message source) instead of the
+legacy `BatchMessageSource`. The v1.1.0 code still used the legacy
+signature, so the `@Override` failed and the factory would never be
+invoked by the framework.
+
+**Fix**: changed the parameter type to `BatchRawMessage` and forwarded
+it (along with the factory + source connector) to the new
+`ASTME1394BatchAdaptor` constructor.
+
+### 19. `ASTME1394DataTypeDelegate` — `getSerializationType` renamed
+
+The `DataTypeDelegate` interface was updated in Mirth Connect 4.x:
+the method `getSerializationType()` was renamed to
+`getDefaultSerializationType()`. The v1.1.0 code still used the old
+name, so the `@Override` failed and the delegate did not satisfy the
+interface contract.
+
+**Fix**: renamed the method to `getDefaultSerializationType()`. The
+return value is unchanged (`SerializationType.XML`).
+
+### 20. `ASTME1394AutoResponder` — parent's `responseGenerationProperties` not initialized
+
+The constructor stored the supplied properties in a private field
+(`genProps`) but did not forward them to the parent's constructor.
+This left the parent's `responseGenerationProperties` field null,
+which caused the inherited `getResponse(String)` method to NPE when
+the framework called it without explicit status / destination args.
+
+**Fix**: the constructor now calls
+`super(responseGenerationProperties)` to initialize the parent's field
+before storing its own typed copy. The `@Override` on
+`getResponse(String, String, String)` is preserved — the method is
+declared by the `AutoResponder` interface and implemented by
+`DefaultAutoResponder`, so the override is valid.
+
+### 21. `ASTME1394DataTypeProperties` — missing `Migratable` hooks
+
+`DataTypeProperties` implements `Migratable`, which declares seven
+`migrate3_x_0(DonkeyElement)` hooks as abstract methods. The nested
+property classes (`ASTME1394SerializationProperties`, etc.) already
+overrode them as no-ops, but the top-level `ASTME1394DataTypeProperties`
+class did not — so the class failed to satisfy the abstract contract.
+
+**Fix**: added seven no-op `migrate3_x_0(DonkeyElement)` overrides to
+`ASTME1394DataTypeProperties`, mirroring the pattern already used by
+the nested property classes.
+
+### 22. `ASTME1394ResponseValidator` — method renamed
+
+The `ResponseValidator` interface (and `DefaultResponseValidator`)
+was updated in Mirth Connect 4.x: the method `isValidResponse` was
+renamed to `validateResponse`. The v1.1.0 code still used the old
+name, so the `@Override` failed.
+
+**Fix**: renamed `isValidResponse` to `validateResponse`. The method
+body is unchanged.
+
+### 23. `ASTME1394BatchProperties` — missing `getBatchScript`
+
+`BatchProperties` declares an abstract `getBatchScript()` method that
+returns a JavaScript snippet used by the framework's default batch
+splitter. The v1.1.0 code did not override it, so the class failed
+to satisfy the abstract contract.
+
+**Fix**: added a `getBatchScript()` override that returns `null`. The
+ASTM E1394 plugin performs batch splitting natively in
+`ASTME1394BatchAdaptor` (using the H..L boundary / record / no-split
+strategy), so no JavaScript snippet is required — `null` signals the
+framework that the native batch adaptor handles splitting.
+
+### 24. `ASTME1394BatchAdaptor` — constructor + abstract method mismatch
+
+In Mirth Connect 4.x the `BatchAdaptor` contract changed:
+
+* The constructor signature is now
+  `(BatchAdaptorFactory, SourceConnector, BatchRawMessage)`.
+* The framework calls `getNextMessage(Integer partitionId)` (returning
+  a `RawMessage`) instead of the legacy `getMessage()`.
+* The `batchMessageSource` field is private in some 4.x micro versions
+  and is exposed via a public `getBatchMessageSource()` getter instead.
+
+The v1.1.0 code used the legacy `(SourceConnector, BatchMessageSource)`
+constructor and accessed `batchMessageSource` as a protected field,
+which failed to compile.
+
+**Fix**:
+
+* Updated the production constructor to
+  `(BatchAdaptorFactory, SourceConnector, BatchRawMessage, SerializerProperties)`
+  and called `super(factory, sourceConnector, batchRawMessage)`.
+* Implemented `getNextMessage(Integer)` — delegates to `getMessage()`
+  and wraps the result in a `RawMessage`.
+* Replaced direct field access with a `resolveBatchMessageSource()`
+  helper that tries the public getter first and falls back to
+  reflective field access on either `batchMessageSource` or
+  `batchRawMessage`. This keeps the plugin source-compatible across
+  Mirth 4.0 — 4.5+ without forcing a specific micro version.
+* Added a `pendingMessages` cache so a single batch-source read that
+  contains multiple ASTM sessions is correctly split across multiple
+  `getNextMessage()` calls.
+
+### 25. `build.sh` — client classpath now tolerates extra Mirth jars
+
+The build script's `CLIENT_CP` was hard-coded to just
+`mirth-client.jar` and `mirth-core.jar`. Some Mirth distributions
+ship additional jars (miglayout, log4j) alongside the client jars
+that the Mirth client jar depends on at compile time. The script now
+auto-includes those extras when present.
+
+---
+
+
 
 ## Summary of issues found in v1.0.0
 

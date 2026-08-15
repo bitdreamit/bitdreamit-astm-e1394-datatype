@@ -92,6 +92,21 @@ public class ASTME1394BatchProperties extends BatchProperties {
     public boolean isIncludeTerminator()    { return includeTerminator; }
     public void    setIncludeTerminator(boolean v) { this.includeTerminator = v; }
 
+    /**
+     * Mirth Connect's {@code BatchProperties} contract requires a batch
+     * splitting script (JavaScript) that the framework evaluates to split
+     * a batch into individual messages. The ASTM E1394 plugin performs
+     * batch splitting natively in {@link ASTME1394BatchAdaptor} (using the
+     * H..L boundary / record / no-split strategy configured via
+     * {@link #setSplitBatchBy(String)}), so no JavaScript snippet is
+     * required — return {@code null} to signal the framework that the
+     * native batch adaptor handles splitting.
+     */
+    @Override
+    public String getBatchScript() {
+        return null;
+    }
+
     @Override public void migrate3_0_1(DonkeyElement e) {}
     @Override public void migrate3_0_2(DonkeyElement e) {}
     @Override public void migrate3_1_0(DonkeyElement e) {}

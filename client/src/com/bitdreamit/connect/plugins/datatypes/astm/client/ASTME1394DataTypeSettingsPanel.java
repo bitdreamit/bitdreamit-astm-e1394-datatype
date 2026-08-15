@@ -1,7 +1,6 @@
 package com.bitdreamit.connect.plugins.datatypes.astm.client;
 
 import com.mirth.connect.client.ui.AbstractSettingsPanel;
-import com.mirth.connect.client.ui.PlatformUI;
 import com.mirth.connect.client.ui.components.MirthCheckBox;
 import com.mirth.connect.client.ui.components.MirthTextField;
 
@@ -9,8 +8,6 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.prefs.Preferences;
-
-import net.miginfocom.swing.MigLayout;
 
 /**
  * Administrator UI settings panel for the ASTM E1394 data type.
@@ -22,6 +19,12 @@ import net.miginfocom.swing.MigLayout;
  * <p>Validation enforces single-character inputs for all four delimiter
  * fields — multi-character delimiters are not supported by the E1394 spec
  * and would corrupt message round-tripping.</p>
+ *
+ * <p><b>Implementation note:</b> Uses only standard JDK Swing layout
+ * ({@link GridBagLayout}) and {@link JOptionPane} for validation alerts so
+ * the panel compiles cleanly against the Mirth client jar without
+ * requiring third-party libraries (MigLayout, SwingX) on the compile
+ * classpath.</p>
  */
 public class ASTME1394DataTypeSettingsPanel extends AbstractSettingsPanel {
 
@@ -70,27 +73,61 @@ public class ASTME1394DataTypeSettingsPanel extends AbstractSettingsPanel {
 
     private void initLayout() {
         setBackground(Color.WHITE);
-        setLayout(new MigLayout("insets 12, fillx, wrap 2", "[right][left,grow]", ""));
+        setLayout(new BorderLayout(0, 0));
 
-        JPanel panel = new JPanel(new MigLayout("insets 12, fillx, wrap 2", "[right][left,grow]"));
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(204, 204, 204)),
             "ASTM E1394 Defaults", TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION,
             new Font("Tahoma", Font.BOLD, 11)));
 
-        panel.add(new JLabel("Field Delimiter:"));        panel.add(fieldDelimiterField,       "w 50!");
-        panel.add(new JLabel("Repeat Delimiter:"));       panel.add(repeatDelimiterField,      "w 50!");
-        panel.add(new JLabel("Component Delimiter:"));    panel.add(componentDelimiterField,  "w 50!");
-        panel.add(new JLabel("Escape Character:"));       panel.add(escapeCharacterField,      "w 50!");
-        panel.add(new JLabel("Derive from Header:"));      panel.add(deriveFromHeaderCheckBox);
-        panel.add(new JLabel("Strict Validation:"));      panel.add(strictValidationCheckBox);
-        panel.add(new JLabel("Strip ASTM E1381 Chars:")); panel.add(stripASTM1381CharsCheckBox);
-        panel.add(new JLabel("Convert Line Breaks:"));     panel.add(convertLineBreaksCheckBox);
-        panel.add(new JLabel("Use Field Repetitions:"));  panel.add(useFieldRepetitionsCheckBox);
-        panel.add(new JLabel("Use Subcomponents:"));       panel.add(useSubcomponentsCheckBox);
+        GridBagConstraints labelC = new GridBagConstraints();
+        labelC.anchor  = GridBagConstraints.EAST;
+        labelC.fill    = GridBagConstraints.NONE;
+        labelC.weightx = 0.0;
+        labelC.insets  = new Insets(4, 8, 4, 4);
 
-        add(panel, "growx");
+        GridBagConstraints fieldC = new GridBagConstraints();
+        fieldC.anchor  = GridBagConstraints.WEST;
+        fieldC.fill    = GridBagConstraints.HORIZONTAL;
+        fieldC.weightx = 1.0;
+        fieldC.insets  = new Insets(4, 4, 4, 8);
+
+        addRow(panel, 0, "Field Delimiter:",       fieldDelimiterField,        labelC, fieldC, 50);
+        addRow(panel, 1, "Repeat Delimiter:",      repeatDelimiterField,       labelC, fieldC, 50);
+        addRow(panel, 2, "Component Delimiter:",   componentDelimiterField,    labelC, fieldC, 50);
+        addRow(panel, 3, "Escape Character:",      escapeCharacterField,       labelC, fieldC, 50);
+        addRow(panel, 4, "Derive from Header:",    deriveFromHeaderCheckBox,   labelC, fieldC, 0);
+        addRow(panel, 5, "Strict Validation:",     strictValidationCheckBox,   labelC, fieldC, 0);
+        addRow(panel, 6, "Strip ASTM E1381 Chars:",stripASTM1381CharsCheckBox, labelC, fieldC, 0);
+        addRow(panel, 7, "Convert Line Breaks:",   convertLineBreaksCheckBox,  labelC, fieldC, 0);
+        addRow(panel, 8, "Use Field Repetitions:", useFieldRepetitionsCheckBox,labelC, fieldC, 0);
+        addRow(panel, 9, "Use Subcomponents:",     useSubcomponentsCheckBox,   labelC, fieldC, 0);
+
+        // Filler row to absorb vertical slack.
+        GridBagConstraints fillerC = new GridBagConstraints();
+        fillerC.gridx   = 0;
+        fillerC.gridy   = 10;
+        fillerC.gridwidth = 2;
+        fillerC.weighty = 1.0;
+        fillerC.fill    = GridBagConstraints.VERTICAL;
+        panel.add(Box.createVerticalGlue(), fillerC);
+
+        add(panel, BorderLayout.CENTER);
+    }
+
+    private void addRow(JPanel panel, int row, String labelText, JComponent field,
+                        GridBagConstraints labelC, GridBagConstraints fieldC, int preferredWidth) {
+        labelC.gridx = 0; labelC.gridy = row;
+        fieldC.gridx = 1; fieldC.gridy = row;
+        panel.add(new JLabel(labelText), labelC);
+        if (preferredWidth > 0) {
+            field.setPreferredSize(new Dimension(preferredWidth, field.getPreferredSize().height));
+            field.setMinimumSize  (new Dimension(preferredWidth, field.getPreferredSize().height));
+            field.setMaximumSize  (new Dimension(preferredWidth, field.getPreferredSize().height));
+        }
+        panel.add(field, fieldC);
     }
 
     @Override
@@ -111,22 +148,22 @@ public class ASTME1394DataTypeSettingsPanel extends AbstractSettingsPanel {
     @Override
     public boolean doSave() {
         if (!isSingleChar(fieldDelimiterField.getText())) {
-            PlatformUI.MIRTH_FRAME.alertError(this, "Field delimiter must be exactly 1 character.");
+            alertError("Field delimiter must be exactly 1 character.");
             fieldDelimiterField.requestFocus();
             return false;
         }
         if (!isSingleChar(repeatDelimiterField.getText())) {
-            PlatformUI.MIRTH_FRAME.alertError(this, "Repeat delimiter must be exactly 1 character.");
+            alertError("Repeat delimiter must be exactly 1 character.");
             repeatDelimiterField.requestFocus();
             return false;
         }
         if (!isSingleChar(componentDelimiterField.getText())) {
-            PlatformUI.MIRTH_FRAME.alertError(this, "Component delimiter must be exactly 1 character.");
+            alertError("Component delimiter must be exactly 1 character.");
             componentDelimiterField.requestFocus();
             return false;
         }
         if (!isSingleChar(escapeCharacterField.getText())) {
-            PlatformUI.MIRTH_FRAME.alertError(this, "Escape character must be exactly 1 character.");
+            alertError("Escape character must be exactly 1 character.");
             escapeCharacterField.requestFocus();
             return false;
         }
@@ -136,7 +173,7 @@ public class ASTME1394DataTypeSettingsPanel extends AbstractSettingsPanel {
         String cd = componentDelimiterField.getText();
         String ec = escapeCharacterField.getText();
         if (fd.equals(rd) || fd.equals(cd) || fd.equals(ec) || rd.equals(cd) || rd.equals(ec) || cd.equals(ec)) {
-            PlatformUI.MIRTH_FRAME.alertError(this, "Delimiters must all be distinct characters.");
+            alertError("Delimiters must all be distinct characters.");
             return false;
         }
 
@@ -152,6 +189,16 @@ public class ASTME1394DataTypeSettingsPanel extends AbstractSettingsPanel {
         p.putBoolean(PREFIX + "useFieldRepetitions",   useFieldRepetitionsCheckBox.isSelected());
         p.putBoolean(PREFIX + "useSubcomponents",     useSubcomponentsCheckBox.isSelected());
         return true;
+    }
+
+    /**
+     * Display a modal error dialog. Uses standard JDK {@link JOptionPane}
+     * rather than {@code PlatformUI.MIRTH_FRAME.alertError(...)} so the
+     * panel does not require the SwingX library ({@code JXFrame}) on the
+     * compile classpath.
+     */
+    private void alertError(String message) {
+        JOptionPane.showMessageDialog(this, message, "Validation Error", JOptionPane.ERROR_MESSAGE);
     }
 
     private boolean isSingleChar(String s) {

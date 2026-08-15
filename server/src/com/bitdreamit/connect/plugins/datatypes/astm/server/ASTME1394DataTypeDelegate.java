@@ -13,6 +13,12 @@ import com.mirth.connect.model.datatype.SerializerProperties;
  * <p>Registered in {@code server/resources/plugin.xml} and instantiated by the
  * Mirth server plugin loader. The delegate is the entry point that wires the
  * data type into Mirth's serializer / deserializer pipeline.</p>
+ *
+ * <p>In Mirth Connect 4.x the {@link DataTypeDelegate} interface was renamed:
+ * {@code getSerializationType()} became {@code getDefaultSerializationType()}.
+ * The new method is invoked once when a channel is created to determine the
+ * channel's default serialization type (XML for ASTM — the canonical form
+ * produced by {@link ASTME1394Deserializer#toXML(String)}).</p>
  */
 public class ASTME1394DataTypeDelegate implements DataTypeDelegate {
 
@@ -33,7 +39,7 @@ public class ASTME1394DataTypeDelegate implements DataTypeDelegate {
     }
 
     @Override
-    public SerializationType getSerializationType() {
+    public SerializationType getDefaultSerializationType() {
         return SerializationType.XML;
     }
 
