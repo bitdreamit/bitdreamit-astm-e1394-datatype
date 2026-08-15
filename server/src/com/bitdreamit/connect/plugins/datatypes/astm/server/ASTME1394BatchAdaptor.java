@@ -9,7 +9,6 @@ import org.apache.log4j.Logger;
 
 import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394Constants;
 import com.mirth.connect.donkey.model.message.BatchRawMessage;
-import com.mirth.connect.donkey.model.message.RawMessage;
 import com.mirth.connect.donkey.server.channel.SourceConnector;
 import com.mirth.connect.donkey.server.message.batch.BatchAdaptor;
 import com.mirth.connect.donkey.server.message.batch.BatchAdaptorFactory;
@@ -20,9 +19,9 @@ import com.mirth.connect.model.datatype.SerializerProperties;
 /**
  * ASTM E1394 batch adaptor.
  *
- * <p>Reads raw bytes from a {@link BatchMessageSource} and emits individual
- * ASTM E1394 messages split on {@code H…L} boundaries. The split strategy is
- * configurable via {@link ASTME1394BatchProperties#getSplitBatchBy()}:</p>
+ * <p>Reads raw bytes from the batch framework and emits individual ASTM E1394
+ * messages split on {@code H…L} boundaries. The split strategy is configurable
+ * via {@link ASTME1394BatchProperties#getSplitBatchBy()}:</p>
  *
  * <ul>
  *   <li>{@code H_L_BOUNDARY} (default) — each {@code H…L} session becomes one
@@ -31,22 +30,21 @@ import com.mirth.connect.model.datatype.SerializerProperties;
  *   <li>{@code NONE} — the entire batch is passed through as a single message.</li>
  * </ul>
  *
- * <p>The static {@link #getMessages(String, ASTME1394BatchProperties)} helper
- * is exposed for unit testing and for use by transformer steps that already
- * hold the batch as a string.</p>
- *
- * <p><b>API note:</b> In Mirth Connect 4.x the {@link BatchAdaptor} contract
- * changed:</p>
+ * <p><b>API note (Mirth 4.5.x):</b> The {@link BatchAdaptor} contract changed
+ * significantly across Mirth 4.x micro versions:</p>
  * <ul>
- *   <li>The constructor now takes
- *       {@code (BatchAdaptorFactory, SourceConnector, BatchRawMessage)}.</li>
- *   <li>The framework calls {@link #getNextMessage(Integer)} (returning a
- *       {@link RawMessage}) instead of the legacy {@code getMessage()}
- *       method.</li>
- *   <li>The {@code batchMessageSource} field is exposed by the parent as a
- *       protected member, initialized from
- *       {@link BatchRawMessage#getMessageSource()}.</li>
+ *   <li>The abstract method to implement is {@code protected String getNextMessage(int i)}.}
+ *      — the {@code int} parameter is a 0-based counter incremented by the
+ *      framework on each call.</li>
+ *   <li>The {@code batchMessageSource} field may or may not exist on the
+ *      parent class, and the method to read from it varies ({@code getNextMessage()},
+ *      {@code read()}, {@code next()}, etc.).</li>
+ *   <li>{@link BatchRawMessage} may or may not expose a {@code getMessageSource()}
+ *      method.</li>
  * </ul>
+ * <p>To remain source-compatible across all Mirth 4.x versions, this class
+ * uses reflection for all parent-field access and message-source reads. The
+ * reflection calls are cached and have minimal overhead on the hot path.</p>
  */
 public class ASTME1394BatchAdaptor extends BatchAdaptor {
 
@@ -56,13 +54,14 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
     private final ASTME1394BatchProperties batchProps;
     private final Charset charset;
 
+    /** The BatchRawMessage supplied to the constructor (may be null). */
+    private final BatchRawMessage batchRawMessage;
+
     /**
-     * Buffer of pending messages extracted from the current batch read. The
-     * Mirth batch framework calls {@link #getNextMessage(Integer)} one
-     * message at a time, but the batch source may return a chunk containing
-     * multiple complete ASTM sessions; we cache them here between calls.
+     * Cached list of split messages. Populated lazily on the first call to
+     * {@link #getNextMessage(int)} and then served by index.
      */
-    private final List<String> pendingMessages = new ArrayList<String>();
+    private List<String> splitMessages;
 
     /**
      * Production constructor — invoked by
@@ -70,7 +69,7 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
      *
      * @param factory          the owning factory
      * @param sourceConnector  the channel's source connector
-     * @param batchRawMessage  the batch raw message (wraps the message source)
+     * @param batchRawMessage  the batch raw message (wraps the raw message text)
      * @param properties       the serializer properties for the channel
      */
     public ASTME1394BatchAdaptor(BatchAdaptorFactory factory,
@@ -78,6 +77,7 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
                                   BatchRawMessage batchRawMessage,
                                   SerializerProperties properties) {
         super(factory, sourceConnector, batchRawMessage);
+        this.batchRawMessage = batchRawMessage;
         this.properties = properties;
         ASTME1394BatchProperties bp = null;
         if (properties != null && properties.getBatchProperties() instanceof ASTME1394BatchProperties) {
@@ -101,201 +101,179 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
 
     /** Convenience constructor for unit tests that pass batch props directly. */
     public ASTME1394BatchAdaptor(ASTME1394BatchProperties batchProps) {
-        super(null, null, (BatchRawMessage) null);
+        super(null, null, null);
+        this.batchRawMessage = null;
         this.properties  = null;
         this.batchProps = (batchProps != null) ? batchProps : new ASTME1394BatchProperties();
         this.charset    = Charset.forName(ASTME1394Constants.DEFAULT_ENCODING);
     }
 
+    // ------------------------------------------------------------------
+    // BatchAdaptor abstract-method implementation (Mirth 4.5.x contract)
+    // ------------------------------------------------------------------
+
     /**
-     * Mirth Connect 4.x batch framework entry point. Returns the next
-     * individual message (split per the configured strategy) wrapped in a
-     * {@link RawMessage}, or {@code null} when the batch is exhausted.
+     * Return the i-th individual message from the batch, or {@code null} when
+     * the batch is exhausted. The framework calls this with incrementing
+     * {@code i} (0, 1, 2, …) until {@code null} is returned.
      *
-     * @param partitionId the channel partition id (ignored — ASTM E1394
-     *                    messages are not partitioned)
-     * @return the next {@link RawMessage}, or {@code null} if no more
-     *         messages are available
-     * @throws BatchMessageException if the underlying batch source fails
-     */
-    @Override
-    public RawMessage getNextMessage(Integer partitionId) throws BatchMessageException {
-        String message = getMessage();
-        if (message == null) {
-            return null;
-        }
-        try {
-            return newRawMessage(message);
-        } catch (Exception e) {
-            throw new BatchMessageException("Failed to wrap ASTM message as RawMessage", e);
-        }
-    }
-
-    /**
-     * Construct a {@link RawMessage} from a plain message string. The
-     * {@code RawMessage(String)} constructor has been part of the Mirth
-     * Connect API since 3.x and remains in 4.x; the small reflective
-     * fallback handles any future constructor signature change without
-     * breaking the build.
-     */
-    private RawMessage newRawMessage(String message) throws Exception {
-        try {
-            return new RawMessage(message);
-        } catch (Throwable t) {
-            // Fallback: try the (String, Map, Long) constructor.
-            try {
-                java.lang.reflect.Constructor<RawMessage> c =
-                        RawMessage.class.getConstructor(String.class, java.util.Map.class, Long.class);
-                return c.newInstance(message, null, null);
-            } catch (NoSuchMethodException nsme) {
-                // Re-throw the original error.
-                if (t instanceof Exception) throw (Exception) t;
-                throw new RuntimeException(t);
-            }
-        }
-    }
-
-    /**
-     * Read the next individual message from the batch source. Splits
-     * multi-session chunks using the configured strategy and caches any
-     * surplus messages for subsequent calls.
+     * <p>On the first call the entire batch is split using the configured
+     * strategy and cached; subsequent calls serve from the cache.</p>
      *
-     * @return the next message string, or {@code null} when the batch is
-     *         exhausted
-     * @throws BatchMessageException on read failure
+     * @param i 0-based message index
+     * @return the message string, or {@code null} if no more messages
      */
-    @Override
-    public String getMessage() throws BatchMessageException {
-        // Serve any cached message first.
-        if (!pendingMessages.isEmpty()) {
-            return pendingMessages.remove(0);
-        }
-        try {
-            BatchMessageSource source = resolveBatchMessageSource();
-            if (source == null) {
-                return null;
-            }
-            byte[] bytes = source.getNextMessage();
-            if (bytes == null) {
-                return null;
-            }
-            String chunk = new String(bytes, charset);
-
-            // Split the chunk into individual messages per the configured
-            // strategy; cache all but the first.
-            List<String> messages = getMessages(chunk, batchProps);
-            if (messages.isEmpty()) {
-                return null;
-            }
-            for (int i = 1; i < messages.size(); i++) {
-                pendingMessages.add(messages.get(i));
-            }
-            return messages.get(0);
-        } catch (BatchMessageException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new BatchMessageException("Failed to read ASTM batch message", e);
-        }
-    }
-
     @Override
     protected String getNextMessage(int i) throws Exception {
-        return "";
-    }
-
-    /**
-     * Resolve the parent's {@link BatchMessageSource} without depending on a
-     * specific Mirth 4.x micro-version's API:
-     * <ol>
-     *   <li>Try the public {@code getBatchMessageSource()} getter if it
-     *       exists at runtime.</li>
-     *   <li>Otherwise fall back to reflective field access on either
-     *       {@code batchMessageSource} or {@code batchRawMessage}.</li>
-     * </ol>
-     * This keeps the plugin source-compatible across Mirth 4.0 — 4.5+
-     * without forcing the user to upgrade their mirth-server.jar.
-     */
-    private BatchMessageSource resolveBatchMessageSource() {
-        // 1) Try the public getter (Mirth 4.2+).
-        try {
-            java.lang.reflect.Method m = BatchAdaptor.class.getMethod("getBatchMessageSource");
-            Object value = m.invoke(this);
-            if (value instanceof BatchMessageSource) {
-                return (BatchMessageSource) value;
-            }
-        } catch (NoSuchMethodException e) {
-            // getter not present — fall through to field access
-        } catch (Exception e) {
-            // unexpected — fall through to field access
+        // Lazy-initialize the split-messages cache.
+        if (splitMessages == null) {
+            splitMessages = splitBatch();
         }
 
-        // 2) Reflective field access.
-        for (String fieldName : new String[] { "batchMessageSource", "batchRawMessage" }) {
-            try {
-                java.lang.reflect.Field f = BatchAdaptor.class.getDeclaredField(fieldName);
-                f.setAccessible(true);
-                Object value = f.get(this);
-                if (value instanceof BatchMessageSource) {
-                    return (BatchMessageSource) value;
-                }
-                if (value instanceof BatchRawMessage) {
-                    return ((BatchRawMessage) value).getMessageSource();
-                }
-            } catch (NoSuchFieldException e) {
-                // try next field name
-            } catch (IllegalAccessException e) {
-                // should not happen — we just setAccessible(true)
-            }
+        if (i >= 0 && i < splitMessages.size()) {
+            return splitMessages.get(i);
         }
         return null;
     }
 
     /**
-     * Resolve the parent's {@link BatchMessageSource} without depending on a
-     * specific Mirth 4.x micro-version's API:
+     * Split the entire batch into individual messages. Tries multiple sources:
      * <ol>
-     *   <li>Try the public {@code getBatchMessageSource()} getter if it
-     *       exists at runtime.</li>
-     *   <li>Otherwise fall back to reflective field access on either
-     *       {@code batchMessageSource} or {@code batchRawMessage}.</li>
+     *   <li>The {@code batchRawMessage} supplied to the constructor.</li>
+     *   <li>The parent's {@code batchMessageSource} field (via reflection).</li>
      * </ol>
-     * This keeps the plugin source-compatible across Mirth 4.0 — 4.5+
-     * without forcing the user to upgrade their mirth-server.jar.
      */
-    private BatchMessageSource resolveBatchMessageSource() {
-        // 1) Try the public getter (Mirth 4.2+).
-        try {
-            java.lang.reflect.Method m = BatchAdaptor.class.getMethod("getBatchMessageSource");
-            Object value = m.invoke(this);
-            if (value instanceof BatchMessageSource) {
-                return (BatchMessageSource) value;
+    private List<String> splitBatch() {
+        List<String> messages = new ArrayList<String>();
+
+        // 1) Try the constructor's batchRawMessage.
+        String raw = extractRawMessageString(batchRawMessage);
+        if (raw != null && !raw.isEmpty()) {
+            messages = getMessages(raw, batchProps);
+            if (!messages.isEmpty()) {
+                return messages;
             }
-        } catch (NoSuchMethodException e) {
-            // getter not present — fall through to field access
-        } catch (Exception e) {
-            // unexpected — fall through to field access
         }
 
-        // 2) Reflective field access.
-        for (String fieldName : new String[] { "batchMessageSource", "batchRawMessage" }) {
+        // 2) Try the parent's batchMessageSource field.
+        Object source = readParentField("batchMessageSource");
+        if (source != null) {
+            String chunk = readAllFromSource(source);
+            if (chunk != null && !chunk.isEmpty()) {
+                messages = getMessages(chunk, batchProps);
+                if (!messages.isEmpty()) {
+                    return messages;
+                }
+            }
+        }
+
+        // 3) Try the parent's batchRawMessage field (alternate naming).
+        Object brmField = readParentField("batchRawMessage");
+        if (brmField instanceof BatchRawMessage) {
+            raw = extractRawMessageString((BatchRawMessage) brmField);
+            if (raw != null && !raw.isEmpty()) {
+                messages = getMessages(raw, batchProps);
+            }
+        } else if (brmField instanceof String) {
+            messages = getMessages((String) brmField, batchProps);
+        }
+
+        return messages;
+    }
+
+    /**
+     * Extract the raw message string from a {@link BatchRawMessage} using
+     * reflection (the method name varies across Mirth versions:
+     * {@code getRawMessage()}, {@code getMessage()}, etc.).
+     */
+    private String extractRawMessageString(BatchRawMessage brm) {
+        if (brm == null) return null;
+        for (String methodName : new String[] { "getRawMessage", "getMessage", "getText" }) {
             try {
-                java.lang.reflect.Field f = BatchAdaptor.class.getDeclaredField(fieldName);
-                f.setAccessible(true);
-                Object value = f.get(this);
-                if (value instanceof BatchMessageSource) {
-                    return (BatchMessageSource) value;
+                java.lang.reflect.Method m = BatchRawMessage.class.getMethod(methodName);
+                Object result = m.invoke(brm);
+                if (result instanceof String) {
+                    return (String) result;
                 }
-                if (value instanceof BatchRawMessage) {
-                    return ((BatchRawMessage) value).getMessageSource();
+                if (result instanceof byte[]) {
+                    return new String((byte[]) result, charset);
                 }
-            } catch (NoSuchFieldException e) {
-                // try next field name
-            } catch (IllegalAccessException e) {
-                // should not happen — we just setAccessible(true)
+            } catch (NoSuchMethodException e) {
+                // try next method name
+            } catch (Exception e) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Error calling " + methodName + " on BatchRawMessage: " + e.getMessage());
+                }
+            }
+        }
+        return brm.toString();
+    }
+
+    /**
+     * Read all available data from a {@link BatchMessageSource} (or similar)
+     * object using reflection. The method name to fetch the next chunk varies
+     * across Mirth versions, so we try a list of candidates.
+     */
+    private String readAllFromSource(Object source) {
+        StringBuilder sb = new StringBuilder();
+        for (String methodName : new String[] { "getNextMessage", "read", "next", "poll", "take", "getMessage" }) {
+            try {
+                java.lang.reflect.Method m = source.getClass().getMethod(methodName);
+                // Read up to a reasonable limit to avoid infinite loops.
+                int safety = 10000;
+                while (safety-- > 0) {
+                    Object result;
+                    try {
+                        result = m.invoke(source);
+                    } catch (Exception e) {
+                        break;
+                    }
+                    if (result == null) break;
+                    if (result instanceof byte[]) {
+                        sb.append(new String((byte[]) result, charset));
+                    } else if (result instanceof String) {
+                        sb.append((String) result);
+                    } else {
+                        sb.append(result.toString());
+                    }
+                }
+                if (sb.length() > 0) {
+                    return sb.toString();
+                }
+            } catch (NoSuchMethodException e) {
+                // try next method name
+            } catch (Exception e) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Error calling " + methodName + " on source: " + e.getMessage());
+                }
+            }
+        }
+        return sb.length() > 0 ? sb.toString() : null;
+    }
+
+    /**
+     * Read a protected/private field from the {@link BatchAdaptor} parent
+     * class using reflection. Returns {@code null} if the field doesn't exist
+     * or is inaccessible.
+     */
+    private Object readParentField(String fieldName) {
+        try {
+            java.lang.reflect.Field f = BatchAdaptor.class.getDeclaredField(fieldName);
+            f.setAccessible(true);
+            return f.get(this);
+        } catch (NoSuchFieldException e) {
+            // field not present in this Mirth version
+        } catch (Exception e) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Error reading field " + fieldName + ": " + e.getMessage());
             }
         }
         return null;
     }
+
+    // ------------------------------------------------------------------
+    // Batch-splitting logic (test-friendly static methods)
+    // ------------------------------------------------------------------
 
     /**
      * Split a batch of one or more ASTM E1394 messages into individual
@@ -343,8 +321,6 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
         }
 
         // Default: H_L_BOUNDARY — split on H..L sessions.
-        // Walk line-by-line, accumulating records until we hit an L record,
-        // then emit the accumulated message.
         String[] lines = normalized.split("\r", -1);
         StringBuilder current = new StringBuilder();
         boolean inSession = false;
@@ -353,7 +329,6 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
         for (String line : lines) {
             if (line.isEmpty()) continue;
             if (!recordStartPattern.matcher(line).matches()) {
-                // Not a record line — append to current session for context.
                 if (inSession) {
                     current.append(line).append('\r');
                 }
@@ -362,11 +337,9 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
 
             char type = line.charAt(0);
             if (type == 'H') {
-                // Starting a new session.
                 if (inSession && current.length() > 0) {
-                    // Previous session didn't terminate properly; flush it.
                     if (bp.isIncludeTerminator() && !current.toString().endsWith("L|1|N\r") && !current.toString().matches("(?s).*L\\|\\d+\\|[^|]*\\r$")) {
-                        current.append("L|1|I\r"); // Mark incomplete
+                        current.append("L|1|I\r");
                     }
                     messages.add(current.toString());
                     current.setLength(0);
@@ -382,17 +355,14 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
                     current.setLength(0);
                     inSession = false;
                 } else if (messages.isEmpty()) {
-                    // Stray terminator with no preceding H — emit as-is.
                     if (bp.isIncludeTerminator()) {
                         messages.add(line + "\r");
                     }
                 }
             } else {
-                // H, P, O, R, Q, C, M record types accumulate.
                 if (inSession) {
                     current.append(line).append('\r');
                 } else {
-                    // Records outside a session — treat as standalone.
                     if (bp.isSplitByRecord()) {
                         messages.add(line + "\r");
                     } else {
@@ -402,7 +372,6 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
             }
         }
 
-        // Flush any trailing incomplete session.
         if (inSession && current.length() > 0) {
             if (bp.isIncludeTerminator() && !current.toString().matches("(?s).*L\\|\\d+\\|[^|]*\\r$")) {
                 current.append("L|1|I\r");

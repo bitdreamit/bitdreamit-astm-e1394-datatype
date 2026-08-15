@@ -105,12 +105,21 @@ Install into Mirth Connect:
 
 ```bash
 mkdir -p $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype
+cp out/bitdreamit-astm-e1394-datatype-shared.jar $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/
 cp out/bitdreamit-astm-e1394-datatype-server.jar $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/
 cp out/bitdreamit-astm-e1394-datatype-client.jar $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/
-cp server/resources/plugin.xml $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/plugin.xml.server
-cp client/resources/plugin.xml $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/plugin.xml.client
+cp out/plugin.xml $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/plugin.xml
 # Restart Mirth Connect service.
 ```
+
+The build produces four output artifacts:
+
+| Artifact | Contents |
+|----------|----------|
+| `bitdreamit-astm-e1394-datatype-shared.jar` | Shared classes (`ASTME1394Constants`) — loaded by both server & client classloaders |
+| `bitdreamit-astm-e1394-datatype-server.jar` | Server classes (serializer, batch adaptor, auto-responder, etc.) |
+| `bitdreamit-astm-e1394-datatype-client.jar` | Client classes (settings panel, client plugin) |
+| `plugin.xml` | Unified plugin metadata file (standalone, not inside any JAR) |
 
 ## Canonical XML format
 
@@ -209,4 +218,4 @@ MIT — see `LICENSE`.
 
 ## See also
 
-- `PRODUCTION_NOTES.md` — detailed changelog of v1.0.0 → v1.1.0 production fixes.
+- `PRODUCTION_NOTES.md` — detailed changelog of v1.0.0 → v1.1.1 production fixes.

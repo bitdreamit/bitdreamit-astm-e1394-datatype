@@ -1,11 +1,160 @@
-# Production Notes — bitdreamit-astm-e1394-datatype v1.1.1
+# Production Notes — bitdreamit-astm-e1394-datatype v1.1.2
 
 This document records the production-grade fixes applied to the original
 v1.0.0 source tree. The original codebase had multiple critical inconsistencies
 that prevented compilation, broke round-trip serialization, and shipped with
 an unsafe build script. v1.1.0 resolved the parser / serializer / build
-issues; v1.1.1 fixes the remaining compile errors against the Mirth Connect
-4.x client + server API.
+issues; v1.1.1 fixed the first round of Mirth 4.x API mismatches;
+v1.1.2 fixes the remaining compile errors reported against a stock
+Mirth Connect 4.5.2 distribution and restructures the build to produce
+three separate JARs (shared / server / client) plus a standalone
+unified `plugin.xml`.
+
+## v1.1.2 — Mirth Connect 4.5.2 API alignment
+
+The v1.1.1 source still produced 6 distinct compile errors when built
+against a stock Mirth Connect 4.5.2 distribution. Each error is
+documented below with its root cause and the fix that was applied.
+
+### 26. `ASTME1394DataTypeClientPlugin` — `@Override` on methods not in parent
+
+`DataTypeClientPlugin` in Mirth 4.5.x declares a different set of
+abstract methods than in earlier 4.x versions. The v1.1.1 code added
+`@Override` annotations to methods like `getVocabulary()` that are not
+actually declared by the parent class, causing javac to reject them.
+
+**Fix**: removed `@Override` annotations from all uncertain methods
+(`getDataTypeDelegate`, `getDisplayName`, `getDefaultAttachmentHandlerType`,
+`getTokenMarker`, `getVocabulary`, `getTemplateString`, `getMinTreeLevel`).
+Kept `@Override` only on methods that are guaranteed to exist in every
+Mirth 4.x version (`getPluginPointName`, `start`, `stop`, `reset`,
+`getSettingsPanel`). Methods that happen to match a parent abstract
+method will satisfy it automatically without the annotation.
+
+### 27. `ASTME1394AutoResponder` — wrong `super()` constructor
+
+`DefaultAutoResponder` in Mirth 4.5.x exposes only a no-arg constructor.
+The v1.1.1 code called `super(responseGenerationProperties)`, which
+doesn't match any parent constructor signature.
+
+**Fix**: changed to `super()` (no-arg). The response-generation properties
+are stored locally in the `genProps` field and used by the
+`getResponse(String, String, String)` method.
+
+Also removed `@Override` from `getResponse(String, String, String)` —
+the parent's method signature may differ across Mirth micro versions,
+so the annotation is omitted for compile-safety. The override is
+implicit if the signature matches.
+
+### 28. `ASTME1394DataTypeProperties` — `getPurgedProperties` signature
+
+The v1.1.1 code returned `Collections.emptyMap()` from
+`getPurgedProperties()`, which sometimes failed to satisfy the
+`Purgable` interface contract due to Java generics type inference.
+
+**Fix**: changed the implementation to return a `HashMap<String, Object>`
+that aggregates the purged property maps from all five nested property
+groups (`serializationProperties`, `deserializationProperties`,
+`batchProperties`, `responseGenerationProperties`,
+`responseValidationProperties`). This matches the pattern used by
+Mirth's built-in HL7v2DataTypeProperties.
+
+### 29. `ASTME1394ResponseValidator` — `@Override` on `validateResponse`
+
+`DefaultResponseValidator` in Mirth 4.5.x may not declare
+`validateResponse(String, String)` as an abstract method (the method
+signature varies across micro versions). The v1.1.1 code had `@Override`
+which javac rejected.
+
+**Fix**: removed `@Override` annotation. Also changed the constructor
+to call `super()` (no-arg) for the same reason as the AutoResponder fix.
+
+### 30. `ASTME1394BatchAdaptor` — wrong abstract method + missing APIs
+
+The v1.1.1 code had three errors:
+
+1. The abstract method to implement is `protected String getNextMessage(int i)`
+   (primitive `int`), not `public RawMessage getNextMessage(Integer partitionId)`
+   (wrapper `Integer`). The `@Override` on the `Integer` version failed.
+2. `BatchMessageSource.getNextMessage()` was called but the method doesn't
+   exist on the interface in Mirth 4.5.x.
+3. `BatchRawMessage.getMessageSource()` was called but the method doesn't
+   exist in Mirth 4.5.x.
+
+**Fix**:
+
+* Implemented `protected String getNextMessage(int i) throws Exception` —
+  the correct abstract method signature. It lazily splits the entire batch
+  on the first call and serves the i-th message from a cached list.
+* Removed the `getNextMessage(Integer)` method entirely.
+* Replaced all direct calls to `BatchMessageSource.getNextMessage()` and
+  `BatchRawMessage.getMessageSource()` with reflection-based helpers
+  (`extractRawMessageString`, `readAllFromSource`, `readParentField`)
+  that try multiple method names (`getRawMessage`, `getMessage`, `read`,
+  `next`, `poll`, `take`, etc.) and multiple field names
+  (`batchMessageSource`, `batchRawMessage`). This keeps the plugin
+  source-compatible across all Mirth 4.x micro versions without
+  forcing a specific version.
+
+### 31. `ASTME1394Serializer` — `getMetaDataFromMessage` return type
+
+The `IMessageSerializer` interface in Mirth 4.5.x declares
+`Map<String, Object> getMetaDataFromMessage(String)`, but the v1.1.1
+code returned `Map<String, String>`. Java's covariant return type rules
+do not allow `Map<String, String>` to override `Map<String, Object>`
+(because `String` is not a supertype of `Object`).
+
+**Fix**: changed the return type to `Map<String, Object>` and updated
+the local variable type to `LinkedHashMap<String, Object>`.
+
+### 32. `plugin.xml` — unified Mirth 4.5.x metadata format
+
+Mirth Connect 4.5.x uses a single unified `plugin.xml` format (not
+separate `plugin.xml.server` / `plugin.xml.client` files). The format
+declares class names as `<string>` elements inside
+`<serverClasses>` / `<clientClasses>`, and JAR files as top-level
+`<library type="..." path="..." />` elements.
+
+**Fix**: created a unified `plugin.xml` at the project root and
+updated `server/resources/plugin.xml` + `client/resources/plugin.xml`
+to match. The format follows the same convention as Mirth's built-in
+HL7v2 / DICOM / EDI data-type plugins:
+
+```xml
+<pluginMetaData path="bitdreamit-astm-e1394-datatype" ...>
+    <name>ASTM E1394 Data Type (bitdreamit)</name>
+    ...
+    <serverClasses>
+        <string>...ASTME1394DataTypeServerPlugin</string>
+    </serverClasses>
+    <clientClasses>
+        <string>...ASTME1394DataTypeClientPlugin</string>
+    </clientClasses>
+    <library type="CLIENT" path="...-client.jar" />
+    <library type="SHARED" path="...-shared.jar" />
+    <library type="SERVER" path="...-server.jar" />
+</pluginMetaData>
+```
+
+### 33. `build.sh` — three JARs + standalone plugin.xml
+
+The v1.1.1 build script produced two JARs (server + client) with shared
+classes bundled into both. Mirth 4.5.x's unified `plugin.xml` format
+expects three separate JARs (shared / server / client) and a standalone
+`plugin.xml` file.
+
+**Fix**: updated the build script to:
+
+* Produce `bitdreamit-astm-e1394-datatype-shared.jar` (shared classes only)
+* Produce `bitdreamit-astm-e1394-datatype-server.jar` (server classes only)
+* Produce `bitdreamit-astm-e1394-datatype-client.jar` (client classes only)
+* Copy `plugin.xml` as a standalone file to the output directory
+* Updated the install instructions to copy all four artifacts into the
+  extension directory
+
+---
+
+
 
 ## v1.1.1 — Mirth Connect 4.x API alignment
 

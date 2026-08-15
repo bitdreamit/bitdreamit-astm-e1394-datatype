@@ -1,16 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Unified plugin.xml — this is the single metadata file that Mirth Connect
+  4.x loads from the extension directory as plugin.xml (NOT plugin.xml.server
+  or plugin.xml.client). The build script copies this file to the output
+  directory and into the extension folder at install time.
+
+  Format follows the Mirth Connect 4.5.x convention used by the built-in
+  HL7v2 / DICOM / EDI data-type plugins: class names are declared as
+  <string> elements inside <serverClasses> / <clientClasses>, and the
+  JAR files are declared at the top level via <library type="..." />.
+-->
 <pluginMetaData path="bitdreamit-astm-e1394-datatype"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="plugin.xsd">
     <name>ASTM E1394 Data Type (bitdreamit)</name>
     <author>Bit Dream IT</author>
-    <pluginVersion>1.1.0</pluginVersion>
-    <mirthVersion>4.x</mirthVersion>
+    <pluginVersion>1.1.1</pluginVersion>
+    <mirthVersion>4.5.2</mirthVersion>
     <url>https://bitdreamit.com</url>
     <description>ASTM E1394-91/97 record-level parser/serializer (H/P/O/R/C/Q/M/L). Transport-agnostic; pairs with the ASTM E1381 transmission-mode plugin for full TCP/serial framing support. Includes header-delimiter derivation, escape sequence handling, batch splitting on H..L boundaries, configurable auto-responder, and response validation.</description>
     <serverClasses>
-        <serverClass class="com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394DataTypeServerPlugin">
-            <library path="bitdreamit-astm-e1394-datatype-server.jar" type="SERVER" />
-        </serverClass>
+        <string>com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394DataTypeServerPlugin</string>
     </serverClasses>
+    <clientClasses>
+        <string>com.bitdreamit.connect.plugins.datatypes.astm.client.ASTME1394DataTypeClientPlugin</string>
+    </clientClasses>
+    <library type="CLIENT" path="bitdreamit-astm-e1394-datatype-client.jar" />
+    <library type="SHARED" path="bitdreamit-astm-e1394-datatype-shared.jar" />
+    <library type="SERVER" path="bitdreamit-astm-e1394-datatype-server.jar" />
 </pluginMetaData>

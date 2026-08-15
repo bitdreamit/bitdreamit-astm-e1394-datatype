@@ -19,12 +19,17 @@ import com.mirth.connect.server.message.DefaultAutoResponder;
  * §6.3.2 by XOR-ing every byte of the payload (including ETX, excluding STX
  * and the LRC byte itself).</p>
  *
- * <p><b>Implementation note:</b> The constructor forwards the
- * {@link ResponseGenerationProperties} to {@link DefaultAutoResponder}'s
- * one-arg constructor so that the parent's {@code responseGenerationProperties}
- * field is initialized — this lets the inherited {@code getResponse(String)}
- * method still produce a valid response when called without explicit status
- * / destination arguments.</p>
+ * <p><b>API note (Mirth 4.5.x):</b> {@link DefaultAutoResponder} in Mirth
+ * 4.5.x exposes only a no-arg constructor — the previous one-arg
+ * {@code DefaultAutoResponder(ResponseGenerationProperties)} constructor
+ * was removed. The response-generation properties are stored locally and
+ * used by {@link #getResponse(String, String, String)}.</p>
+ *
+ * <p>The {@code getResponse(String, String, String)} method signature may
+ * or may not match a parent method depending on the Mirth micro version.
+ * The {@code @Override} annotation is deliberately omitted so the code
+ * compiles on every version; if the signature matches a parent method,
+ * the override is implicit.</p>
  */
 public class ASTME1394AutoResponder extends DefaultAutoResponder {
 
@@ -35,7 +40,7 @@ public class ASTME1394AutoResponder extends DefaultAutoResponder {
 
     public ASTME1394AutoResponder(SerializationProperties serializationProperties,
                                    ResponseGenerationProperties responseGenerationProperties) {
-        super(responseGenerationProperties);
+        super();
         this.serProps  = (serializationProperties instanceof ASTME1394SerializationProperties)
                 ? (ASTME1394SerializationProperties) serializationProperties
                 : new ASTME1394SerializationProperties();
@@ -44,7 +49,15 @@ public class ASTME1394AutoResponder extends DefaultAutoResponder {
                 : new ASTME1394ResponseGenerationProperties();
     }
 
-    @Override
+    /**
+     * Build an ASTM E1381-framed ACK response.
+     *
+     * @param message     the original inbound message (unused in the simple
+     *                    ACK case, but available for correlation)
+     * @param status      "SUCCESS", "ERROR", or "REJECT"
+     * @param destination the destination connector name (unused)
+     * @return the framed ACK string
+     */
     public String getResponse(String message, String status, String destination) {
         if (genProps == null) {
             return ASTME1394Constants.RESPONSE_ACCEPT;
@@ -63,7 +76,6 @@ public class ASTME1394AutoResponder extends DefaultAutoResponder {
             }
 
             // Payload layout: [seq]<code>[|<timestamp>]<ETX>
-            // Sequence numbers in ASTM E1381 are 0-7.
             String seq = genProps.isIncludeSequenceNumber() ? "1" : "";
             StringBuilder payload = new StringBuilder();
             payload.append(seq).append(responseCode);

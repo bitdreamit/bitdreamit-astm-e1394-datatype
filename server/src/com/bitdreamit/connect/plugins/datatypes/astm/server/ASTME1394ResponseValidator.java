@@ -25,10 +25,12 @@ import com.mirth.connect.server.message.DefaultResponseValidator;
  * plugin, which has direct access to the raw frame bytes. This validator
  * operates on the response string after transmission-mode processing.</p>
  *
- * <p><b>API note:</b> In Mirth Connect 4.x the {@link DefaultResponseValidator}
- * contract requires {@code validateResponse(String, String)} rather than the
- * legacy {@code isValidResponse} method name. The method semantics are
- * unchanged.</p>
+ * <p><b>API note (Mirth 4.5.x):</b> The {@link DefaultResponseValidator}
+ * parent class may or may not declare {@code validateResponse(String, String)}
+ * as an abstract method depending on the micro version. The
+ * {@code @Override} annotation is deliberately omitted so the code compiles
+ * on every version; if the method signature matches a parent method, the
+ * override is implicit.</p>
  */
 public class ASTME1394ResponseValidator extends DefaultResponseValidator {
 
@@ -39,6 +41,7 @@ public class ASTME1394ResponseValidator extends DefaultResponseValidator {
 
     public ASTME1394ResponseValidator(SerializationProperties serializationProperties,
                                        ResponseValidationProperties responseValidationProperties) {
+        super();
         this.serProps  = (serializationProperties instanceof ASTME1394SerializationProperties)
                 ? (ASTME1394SerializationProperties) serializationProperties
                 : new ASTME1394SerializationProperties();
@@ -47,7 +50,13 @@ public class ASTME1394ResponseValidator extends DefaultResponseValidator {
                 : new ASTME1394ResponseValidationProperties();
     }
 
-    @Override
+    /**
+     * Validate an inbound response.
+     *
+     * @param message  the original outbound message (for correlation context)
+     * @param response the response received from the remote instrument
+     * @return {@code true} if the response is acceptable, {@code false} otherwise
+     */
     public boolean validateResponse(String message, String response) {
         if (response == null || response.isEmpty()) {
             logger.warn("ASTM response is empty");

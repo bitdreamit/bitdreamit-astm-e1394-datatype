@@ -5,17 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95656bc7-1cf0-4df8-929c-0c4e3c72eaa1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/mirth_client.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/mirth_client.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/libraries/mirth_server.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/mirth_server.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PRODUCTION_NOTES.md" beforeDir="false" afterPath="$PROJECT_DIR$/PRODUCTION_NOTES.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/resources/plugin.xml" beforeDir="false" afterPath="$PROJECT_DIR$/client/resources/plugin.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeClientPlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeClientPlugin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeSettingsPanel.java" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeSettingsPanel.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/distribution/build.sh" beforeDir="false" afterPath="$PROJECT_DIR$/distribution/build.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/server/resources/plugin.xml" beforeDir="false" afterPath="$PROJECT_DIR$/server/resources/plugin.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394AutoResponder.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394AutoResponder.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394BatchAdaptor.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394BatchAdaptor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394BatchAdaptorFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394BatchAdaptorFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394BatchProperties.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394BatchProperties.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394DataTypeDelegate.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394DataTypeDelegate.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394DataTypeProperties.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394DataTypeProperties.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394ResponseValidator.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394ResponseValidator.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394Serializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394Serializer.java" afterDir="false" />
@@ -36,24 +35,24 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;D:/Java/bitdreamit-astm-e1394-datatype&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Libraries&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "Merging main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "D:/Java/bitdreamit-astm-e1394-datatype",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Libraries",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
   }
-}</component>
+}]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -71,7 +70,6 @@
       <updated>1786649847246</updated>
       <workItem from="1786649848862" duration="3557000" />
       <workItem from="1786673738641" duration="2100000" />
-      <workItem from="1786794568539" duration="303000" />
     </task>
     <servers />
   </component>

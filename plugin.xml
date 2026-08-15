@@ -1,10 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Copy of the unified plugin.xml — kept here for IDE / IntelliJ reference.
-  The build script uses the copy in server/resources/plugin.xml as the
-  single source of truth and installs it as plugin.xml (not .server / .client)
-  in the extension directory.
--->
 <pluginMetaData path="bitdreamit-astm-e1394-datatype"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="plugin.xsd">
@@ -13,7 +7,7 @@
     <pluginVersion>1.1.1</pluginVersion>
     <mirthVersion>4.5.2</mirthVersion>
     <url>https://bitdreamit.com</url>
-    <description>ASTM E1394-91/97 record-level parser/serializer (H/P/O/R/C/Q/M/L). Provides the Administrator UI settings panel for configuring default delimiters and parser options.</description>
+    <description>ASTM E1394-91/97 record-level parser/serializer (H/P/O/R/C/Q/M/L). Transport-agnostic; pairs with the ASTM E1381 transmission-mode plugin for full TCP/serial framing support. Includes header-delimiter derivation, escape sequence handling, batch splitting on H..L boundaries, configurable auto-responder, and response validation.</description>
     <serverClasses>
         <string>com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394DataTypeServerPlugin</string>
     </serverClasses>
