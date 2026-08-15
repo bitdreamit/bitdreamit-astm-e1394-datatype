@@ -152,10 +152,15 @@ public class ASTME1394Serializer implements IMessageSerializer {
      * record-type letters observed in the message so Mirth's router /
      * filter steps can key off them. Always returns a non-null map (empty
      * if the message is null or empty).
+     *
+     * <p>The return type is {@code Map<String, Object>} to match the
+     * {@link IMessageSerializer} contract in Mirth Connect 4.x (the
+     * interface declares {@code Map<String, Object>}, not
+     * {@code Map<String, String>}).</p>
      */
     @Override
-    public Map<String, String> getMetaDataFromMessage(String message) {
-        Map<String, String> meta = new LinkedHashMap<String, String>();
+    public Map<String, Object> getMetaDataFromMessage(String message) {
+        Map<String, Object> meta = new LinkedHashMap<String, Object>();
         if (message == null || message.isEmpty()) {
             return meta;
         }

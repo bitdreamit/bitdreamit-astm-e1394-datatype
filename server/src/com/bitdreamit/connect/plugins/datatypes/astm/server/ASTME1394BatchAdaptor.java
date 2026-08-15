@@ -251,6 +251,53 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
     }
 
     /**
+     * Resolve the parent's {@link BatchMessageSource} without depending on a
+     * specific Mirth 4.x micro-version's API:
+     * <ol>
+     *   <li>Try the public {@code getBatchMessageSource()} getter if it
+     *       exists at runtime.</li>
+     *   <li>Otherwise fall back to reflective field access on either
+     *       {@code batchMessageSource} or {@code batchRawMessage}.</li>
+     * </ol>
+     * This keeps the plugin source-compatible across Mirth 4.0 — 4.5+
+     * without forcing the user to upgrade their mirth-server.jar.
+     */
+    private BatchMessageSource resolveBatchMessageSource() {
+        // 1) Try the public getter (Mirth 4.2+).
+        try {
+            java.lang.reflect.Method m = BatchAdaptor.class.getMethod("getBatchMessageSource");
+            Object value = m.invoke(this);
+            if (value instanceof BatchMessageSource) {
+                return (BatchMessageSource) value;
+            }
+        } catch (NoSuchMethodException e) {
+            // getter not present — fall through to field access
+        } catch (Exception e) {
+            // unexpected — fall through to field access
+        }
+
+        // 2) Reflective field access.
+        for (String fieldName : new String[] { "batchMessageSource", "batchRawMessage" }) {
+            try {
+                java.lang.reflect.Field f = BatchAdaptor.class.getDeclaredField(fieldName);
+                f.setAccessible(true);
+                Object value = f.get(this);
+                if (value instanceof BatchMessageSource) {
+                    return (BatchMessageSource) value;
+                }
+                if (value instanceof BatchRawMessage) {
+                    return ((BatchRawMessage) value).getMessageSource();
+                }
+            } catch (NoSuchFieldException e) {
+                // try next field name
+            } catch (IllegalAccessException e) {
+                // should not happen — we just setAccessible(true)
+            }
+        }
+        return null;
+    }
+
+    /**
      * Split a batch of one or more ASTM E1394 messages into individual
      * messages, using the configured split strategy.
      *

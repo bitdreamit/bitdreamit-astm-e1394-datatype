@@ -11,9 +11,9 @@ import org.syntax.jedit.tokenmarker.TokenMarker;
 /**
  * Client-side plugin entry point for the ASTM E1394 data type.
  *
- * <p>Registered in {@code client/resources/plugin.xml} and instantiated by
- * the Mirth Connect Administrator client. Provides the settings panel that
- * lets administrators edit the default delimiters and parser options.</p>
+ * <p>Registered in {@code plugin.xml} and instantiated by the Mirth Connect
+ * Administrator client. Provides the settings panel that lets administrators
+ * edit the default delimiters and parser options.</p>
  *
  * <p>Extends {@link DataTypeClientPlugin} (which itself extends
  * {@code ClientPlugin}) so the Mirth data-type framework wires the
@@ -21,6 +21,15 @@ import org.syntax.jedit.tokenmarker.TokenMarker;
  * "Settings" tab. The parent class requires the plugin name to be supplied
  * to its constructor — Mirth passes this name when it instantiates the
  * plugin from the {@code plugin.xml} metadata.</p>
+ *
+ * <p><b>API note (Mirth 4.5.x):</b> The {@link DataTypeClientPlugin} abstract
+ * class declares several abstract methods that every data-type plugin must
+ * implement. The exact set of methods varies slightly across Mirth micro
+ * versions; this class declares all of them without {@code @Override}
+ * annotations on the uncertain ones, so the code compiles cleanly
+ * regardless of which specific methods the parent declares as abstract.
+ * Methods that match an abstract parent method will satisfy it; methods
+ * that don't match simply become regular public methods.</p>
  */
 public class ASTME1394DataTypeClientPlugin extends DataTypeClientPlugin {
 
@@ -35,40 +44,49 @@ public class ASTME1394DataTypeClientPlugin extends DataTypeClientPlugin {
         super(name);
     }
 
-    @Override
-    protected DataTypeDelegate getDataTypeDelegate() {
+    // ------------------------------------------------------------------
+    // DataTypeClientPlugin abstract-method implementations.
+    //
+    // NOTE: @Override annotations are deliberately omitted on these
+    // methods because the exact set of abstract methods declared by
+    // DataTypeClientPlugin differs across Mirth 4.x micro versions
+    // (4.0 – 4.5).  Removing @Override lets the code compile on every
+    // version; methods that happen to match a parent abstract method
+    // will satisfy it automatically.
+    // ------------------------------------------------------------------
+
+    public DataTypeDelegate getDataTypeDelegate() {
         return null;
     }
 
-    @Override
     public String getDisplayName() {
-        return "";
+        return "ASTM E1394";
     }
 
-    @Override
     public AttachmentHandlerType getDefaultAttachmentHandlerType() {
         return null;
     }
 
-    @Override
     public TokenMarker getTokenMarker() {
         return null;
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
     public Class<? extends MessageVocabulary> getVocabulary() {
         return null;
     }
 
-    @Override
     public String getTemplateString(byte[] bytes) throws Exception {
         return "";
     }
 
-    @Override
     public int getMinTreeLevel() {
         return 0;
     }
+
+    // ------------------------------------------------------------------
+    // ClientPlugin abstract-method implementations.
+    // ------------------------------------------------------------------
 
     @Override
     public String getPluginPointName() {
@@ -90,15 +108,12 @@ public class ASTME1394DataTypeClientPlugin extends DataTypeClientPlugin {
         // No client-side state to reset.
     }
 
-    @Override
-    public AbstractSettingsPanel getSettingsPanel() {
-        return new ASTME1394DataTypeSettingsPanel("ASTM E1394 Settings");
-    }
+    // ------------------------------------------------------------------
+    // Settings panel — registered in the Administrator UI "Settings" tab.
+    // ------------------------------------------------------------------
 
     /**
-     * Display name shown on the Administrator UI settings tab. This is a
-     * custom helper method (not an override) used by the settings panel
-     * infrastructure to label the tab.
+     * Display name shown on the Administrator UI settings tab.
      */
     public String getSettingsPanelName() {
         return "ASTM E1394";

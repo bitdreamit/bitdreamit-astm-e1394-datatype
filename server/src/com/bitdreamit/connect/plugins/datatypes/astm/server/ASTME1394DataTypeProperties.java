@@ -3,7 +3,7 @@ package com.bitdreamit.connect.plugins.datatypes.astm.server;
 import com.mirth.connect.donkey.util.DonkeyElement;
 import com.mirth.connect.model.datatype.DataTypeProperties;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -15,12 +15,17 @@ import java.util.Map;
  * expose their individual {@code PropertyDescriptor} maps to the Administrator
  * UI for editing.</p>
  *
- * <p>{@link DataTypeProperties} implements the {@code Migratable} interface,
- * which declares seven {@code migrate3_x_0(DonkeyElement)} hooks. Each nested
- * property class already overrides them as no-ops; this top-level container
- * mirrors the same pattern so the parent's abstract methods are satisfied
- * even when a migration framework instantiates this class directly without
- * going through the nested property classes.</p>
+ * <p>{@link DataTypeProperties} implements the {@code Migratable} and
+ * {@code Purgable} interfaces, which declare {@code migrate3_x_0} hooks and
+ * {@code getPurgedProperties()} respectively. Each nested property class
+ * already overrides them; this top-level container mirrors the same pattern
+ * so the parent's abstract contract is satisfied even when a migration
+ * framework instantiates this class directly without going through the
+ * nested property classes.</p>
+ *
+ * <p>The {@code getPurgedProperties()} implementation aggregates the purged
+ * property maps from all five nested property groups, so that channel-export
+ * purging removes all sensitive values in one pass.</p>
  */
 public class ASTME1394DataTypeProperties extends DataTypeProperties {
 
@@ -45,8 +50,28 @@ public class ASTME1394DataTypeProperties extends DataTypeProperties {
     @Override public void migrate3_4_0(DonkeyElement element) {}
     @Override public void migrate3_5_0(DonkeyElement element) {}
 
+    // -----------------------------------------------------------------
+    // Purgable — aggregate purged properties from all nested groups.
+    // -----------------------------------------------------------------
     @Override
+    @SuppressWarnings("unchecked")
     public Map<String, Object> getPurgedProperties() {
-        return Collections.emptyMap();
+        Map<String, Object> purged = new HashMap<String, Object>();
+        if (serializationProperties != null) {
+            purged.putAll(serializationProperties.getPurgedProperties());
+        }
+        if (deserializationProperties != null) {
+            purged.putAll(deserializationProperties.getPurgedProperties());
+        }
+        if (batchProperties != null) {
+            purged.putAll(batchProperties.getPurgedProperties());
+        }
+        if (responseGenerationProperties != null) {
+            purged.putAll(responseGenerationProperties.getPurgedProperties());
+        }
+        if (responseValidationProperties != null) {
+            purged.putAll(responseValidationProperties.getPurgedProperties());
+        }
+        return purged;
     }
 }
