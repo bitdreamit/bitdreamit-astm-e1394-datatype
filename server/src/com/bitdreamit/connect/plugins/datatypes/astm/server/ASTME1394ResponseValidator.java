@@ -24,6 +24,11 @@ import com.mirth.connect.server.message.DefaultResponseValidator;
  * <p>Checksum (LRC) validation is delegated to the ASTM E1381 transmission-mode
  * plugin, which has direct access to the raw frame bytes. This validator
  * operates on the response string after transmission-mode processing.</p>
+ *
+ * <p><b>API note:</b> In Mirth Connect 4.x the {@link DefaultResponseValidator}
+ * contract requires {@code validateResponse(String, String)} rather than the
+ * legacy {@code isValidResponse} method name. The method semantics are
+ * unchanged.</p>
  */
 public class ASTME1394ResponseValidator extends DefaultResponseValidator {
 
@@ -43,7 +48,7 @@ public class ASTME1394ResponseValidator extends DefaultResponseValidator {
     }
 
     @Override
-    public boolean isValidResponse(String message, String response) {
+    public boolean validateResponse(String message, String response) {
         if (response == null || response.isEmpty()) {
             logger.warn("ASTM response is empty");
             return false;

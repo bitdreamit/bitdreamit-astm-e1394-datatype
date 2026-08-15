@@ -18,6 +18,13 @@ import com.mirth.connect.server.message.DefaultAutoResponder;
  * <p>The LRC (Longitudinal Redundancy Check) byte is computed per ASTM E1381
  * §6.3.2 by XOR-ing every byte of the payload (including ETX, excluding STX
  * and the LRC byte itself).</p>
+ *
+ * <p><b>Implementation note:</b> The constructor forwards the
+ * {@link ResponseGenerationProperties} to {@link DefaultAutoResponder}'s
+ * one-arg constructor so that the parent's {@code responseGenerationProperties}
+ * field is initialized — this lets the inherited {@code getResponse(String)}
+ * method still produce a valid response when called without explicit status
+ * / destination arguments.</p>
  */
 public class ASTME1394AutoResponder extends DefaultAutoResponder {
 
@@ -28,6 +35,7 @@ public class ASTME1394AutoResponder extends DefaultAutoResponder {
 
     public ASTME1394AutoResponder(SerializationProperties serializationProperties,
                                    ResponseGenerationProperties responseGenerationProperties) {
+        super(responseGenerationProperties);
         this.serProps  = (serializationProperties instanceof ASTME1394SerializationProperties)
                 ? (ASTME1394SerializationProperties) serializationProperties
                 : new ASTME1394SerializationProperties();

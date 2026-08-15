@@ -1,11 +1,15 @@
 package com.bitdreamit.connect.plugins.datatypes.astm.server;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import com.mirth.connect.donkey.model.message.MessageSerializer;
+import com.mirth.connect.donkey.model.message.MessageSerializerException;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 
 import com.mirth.connect.model.converters.IMessageSerializer;
 import com.mirth.connect.model.datatype.SerializerProperties;
-import com.mirth.connect.model.util.MessageSerializerException;
 
 /**
  * ASTM E1394 message serializer — the single {@link IMessageSerializer} entry
@@ -23,6 +27,14 @@ import com.mirth.connect.model.util.MessageSerializerException;
  * <p>JSON conversion is not supported by the ASTM E1394 standard; the
  * {@code toJSON} / {@code fromJSON} methods return {@code null} (per the
  * {@link IMessageSerializer} contract for unsupported formats).</p>
+ *
+ * <p><b>Exception handling:</b> In Mirth Connect 4.x the
+ * {@link IMessageSerializer} interface methods do not declare any checked
+ * exceptions (the legacy {@code MessageSerializerException} type was
+ * removed). All parser / serializer failures are therefore wrapped into a
+ * {@link RuntimeException} so they propagate through Mirth's transformer
+ * pipeline as unchecked errors, matching the behaviour of the built-in
+ * HL7v2 / XML / JSON serializers.</p>
  */
 public class ASTME1394Serializer implements IMessageSerializer {
 
@@ -47,7 +59,7 @@ public class ASTME1394Serializer implements IMessageSerializer {
     }
 
     @Override
-    public String toXML(String source) throws MessageSerializerException {
+    public String toXML(String source) {
         if (source == null) {
             return null;
         }
@@ -62,29 +74,31 @@ public class ASTME1394Serializer implements IMessageSerializer {
                     len = source.length();
                 }
                 if (len > maxBytes) {
-                    throw new MessageSerializerException(
+                    throw new RuntimeException(
                         "ASTM E1394 message exceeds max-size limit (" + maxBytes + " bytes, got " + len + ")");
                 }
             }
             return new ASTME1394Deserializer(deserProps).toXML(source);
-        } catch (MessageSerializerException e) {
+        } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             logger.error("ASTM → XML conversion failed", e);
-            throw new MessageSerializerException(e);
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public String fromXML(String source) throws MessageSerializerException {
+    public String fromXML(String source) {
         if (source == null) {
             return null;
         }
         try {
             return new ASTME1394FromXmlConverter(serProps).convert(source);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("XML → ASTM conversion failed", e);
-            throw new MessageSerializerException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -92,15 +106,17 @@ public class ASTME1394Serializer implements IMessageSerializer {
      * Serialize a pre-parsed DOM {@link Document} into ASTM text. Useful when
      * transformer steps manipulate the DOM directly.
      */
-    public String fromXML(Document doc) throws MessageSerializerException {
+    public String fromXML(Document doc) {
         if (doc == null) {
             return null;
         }
         try {
             return new ASTME1394FromXmlConverter(serProps).convert(doc);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("DOM → ASTM conversion failed", e);
-            throw new MessageSerializerException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -119,5 +135,47 @@ public class ASTME1394Serializer implements IMessageSerializer {
     public boolean isSerializationRequired(boolean toXml) {
         // Always serialize — we need DOM access for transformer steps.
         return true;
+    }
+
+    @Override
+    public String transformWithoutSerializing(String s, MessageSerializer messageSerializer) throws MessageSerializerException {
+        return "";
+    }
+
+    @Override
+    public void populateMetaData(String s, Map<String, Object> map) {
+
+    }
+
+    /**
+     * Extract metadata from an inbound ASTM E1394 message. Returns the
+     * record-type letters observed in the message so Mirth's router /
+     * filter steps can key off them. Always returns a non-null map (empty
+     * if the message is null or empty).
+     */
+    @Override
+    public Map<String, String> getMetaDataFromMessage(String message) {
+        Map<String, String> meta = new LinkedHashMap<String, String>();
+        if (message == null || message.isEmpty()) {
+            return meta;
+        }
+        // Record the leading letter of every non-empty line.
+        StringBuilder types = new StringBuilder();
+        String normalized = message.replace("\r\n", "\r").replace("\n", "\r");
+        for (String line : normalized.split("\r", -1)) {
+            if (line == null || line.isEmpty()) continue;
+            char c = line.charAt(0);
+            if (c >= 'A' && c <= 'Z') {
+                if (types.length() > 0) types.append(',');
+                types.append(c);
+            }
+        }
+        if (types.length() > 0) {
+            meta.put("recordTypes", types.toString());
+            // The first record type is conventionally the message type.
+            meta.put("type", String.valueOf(types.charAt(0)));
+        }
+        meta.put("encoding", serProps.getEncoding());
+        return meta;
     }
 }

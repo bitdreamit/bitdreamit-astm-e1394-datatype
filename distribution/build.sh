@@ -91,7 +91,16 @@ log "Found hamcrest-core.jar:   $HAMCREST_JAR"
 
 # Build classpaths.
 SERVER_CP="$MIRTH_SERVER_JAR:$DONKEY_SERVER_JAR:$MIRTH_CORE_JAR:$MIRTH_CLIENT_CORE_JAR"
+# Client classpath — includes miglayout and log4j if present (the Mirth
+# Administrator UI ships these jars; they are required by the settings
+# panel's parent class AbstractSettingsPanel even though the panel itself
+# only uses standard Swing components).
 CLIENT_CP="$MIRTH_CLIENT_JAR:$MIRTH_CLIENT_CORE_JAR"
+for extra in miglayout-swing.jar miglayout-core.jar miglayout-3.7.4.jar log4j-1.2-api-2.17.2.jar log4j-api-2.17.2.jar log4j-core-2.17.2.jar; do
+    if [ -f "$LIBS_DIR/client/$extra" ]; then
+        CLIENT_CP="$CLIENT_CP:$LIBS_DIR/client/$extra"
+    fi
+done
 TEST_CP="$SERVER_CP:$JUNIT_JAR:$HAMCREST_JAR"
 
 # ---------------------------------------------------------------------------
