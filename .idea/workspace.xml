@@ -11,18 +11,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="95656bc7-1cf0-4df8-929c-0c4e3c72eaa1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeClientPlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeClientPlugin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeCodeTemplatePlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeCodeTemplatePlugin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/test/test/com/bitdreamit/connect/plugins/datatypes/astm/test/txt.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/shared/src/com/bitdreamit/connect/plugins/datatypes/astm/shared/ASTME1394Serializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/shared/src/com/bitdreamit/connect/plugins/datatypes/astm/shared/ASTME1394Serializer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/src/com/bitdreamit/connect/plugins/datatypes/astm/test/txt.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/unsign/bitdreamit-astm-e1394-datatype/bitdreamit-astm-e1394-datatype-client.jar" beforeDir="false" afterPath="$PROJECT_DIR$/unsign/bitdreamit-astm-e1394-datatype/bitdreamit-astm-e1394-datatype-client.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unsign/bitdreamit-astm-e1394-datatype/bitdreamit-astm-e1394-datatype-server.jar" beforeDir="false" afterPath="$PROJECT_DIR$/unsign/bitdreamit-astm-e1394-datatype/bitdreamit-astm-e1394-datatype-server.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unsign/bitdreamit-astm-e1394-datatype/bitdreamit-astm-e1394-datatype-shared.jar" beforeDir="false" afterPath="$PROJECT_DIR$/unsign/bitdreamit-astm-e1394-datatype/bitdreamit-astm-e1394-datatype-shared.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unsign/bitdreamit-astm-e1394-datatype/plugin.xml" beforeDir="false" afterPath="$PROJECT_DIR$/unsign/bitdreamit-astm-e1394-datatype/plugin.xml" afterDir="false" />
-    </list>
+    <list default="true" id="95656bc7-1cf0-4df8-929c-0c4e3c72eaa1" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -54,7 +43,7 @@
     "nodejs_package_manager_path": "npm",
     "project.structure.last.edited": "Artifacts",
     "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
+    "project.structure.side.proportion": "0.34712642",
     "settings.editor.selected.configurable": "preferences.lookFeel"
   }
 }]]></component>
@@ -81,7 +70,7 @@
       <workItem from="1786846445482" duration="63000" />
       <workItem from="1786846553530" duration="1068000" />
       <workItem from="1786855731423" duration="1522000" />
-      <workItem from="1786891470586" duration="472000" />
+      <workItem from="1786891470586" duration="1290000" />
     </task>
     <servers />
   </component>
