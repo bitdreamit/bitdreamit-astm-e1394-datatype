@@ -1,4 +1,4 @@
-# Production Notes — bitdreamit-astm-e1394-datatype v1.1.5
+# Production Notes — bitdreamit-astm-e1394-datatype v1.1.7
 
 This document records the production-grade fixes applied to the original
 v1.0.0 source tree. The original codebase had multiple critical inconsistencies
@@ -9,8 +9,155 @@ v1.1.2 fixed additional Mirth 4.5.2 API mismatches and restructured the
 build to produce three separate JARs; v1.1.3 fixed the
 `MessageSerializer` abstract-method issue and added IntelliJ IDEA build
 artifact configurations; v1.1.4 fixed three more compile errors;
-v1.1.5 fixes the IntelliJ module dependency issue that prevented the test
-module from finding the Mirth server classes.
+v1.1.5 fixed the IntelliJ module dependency issue;
+v1.1.6 removed the `.idea` directory to fix IntelliJ hangs;
+v1.1.7 renames all artifacts to follow Mirth's `datatype-*` naming
+convention used by the built-in HL7v2 / DICOM / EDI data-type plugins.
+
+## v1.1.7 — Adopt Mirth's `datatype-*` naming convention
+
+### 42. JAR / folder names now match Mirth's built-in data-type plugin pattern
+
+**Symptom:** The previous build produced JARs named
+`bitdreamit-astm-e1394-datatype-{shared,server,client}.jar` and expected
+them to be installed into
+`$MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/`. This naming
+does not match Mirth Connect 4.5.x's convention for built-in data-type
+plugins, which all use the pattern `datatype-<name>-{shared,server,client}.jar`
+inside `$MIRTH_HOME/extensions/datatype-<name>/`.
+
+For reference, Mirth's built-in HL7v2 plugin ships as:
+
+```
+$MIRTH_HOME/extensions/datatype-hl7v2/
+    ├── plugin.xml
+    ├── datatype-hl7v2-shared.jar
+    ├── datatype-hl7v2-server.jar
+    └── datatype-hl7v2-client.jar
+```
+
+with `plugin.xml` containing:
+
+```xml
+<pluginMetaData path="datatype-hl7v2">
+    ...
+    <library type="CLIENT" path="datatype-hl7v2-client.jar" />
+    <library type="SHARED" path="datatype-hl7v2-shared.jar" />
+    <library type="SERVER" path="datatype-hl7v2-server.jar" />
+</pluginMetaData>
+```
+
+**Fix:** renamed all artifacts to follow this exact pattern:
+
+| Old name | New name |
+|----------|----------|
+| `bitdreamit-astm-e1394-datatype-shared.jar` | `datatype-astm-e1394-shared.jar` |
+| `bitdreamit-astm-e1394-datatype-server.jar` | `datatype-astm-e1394-server.jar` |
+| `bitdreamit-astm-e1394-datatype-client.jar` | `datatype-astm-e1394-client.jar` |
+| `$MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/` | `$MIRTH_HOME/extensions/datatype-astm-e1394/` |
+| `path="bitdreamit-astm-e1394-datatype"` (in plugin.xml) | `path="datatype-astm-e1394"` |
+
+The `path` attribute on `<pluginMetaData>` now matches the extension
+folder name exactly (`datatype-astm-e1394`), which is what Mirth's
+plugin loader expects when resolving the `<library>` paths.
+
+### Files changed in v1.1.7
+
+| File | Change |
+|------|--------|
+| `plugin.xml` (root) | `path` → `datatype-astm-e1394`; `<library>` paths → `datatype-astm-e1394-*.jar`; version → 1.1.7 |
+| `server/resources/plugin.xml` | Same as above |
+| `client/resources/plugin.xml` | Same as above |
+| `distribution/build.sh` | `PLUGIN_VERSION` → 1.1.7; JAR output names → `datatype-astm-e1394-*.jar`; install instructions updated |
+| `shared/META-INF/MANIFEST.MF` | `Created-By` + version → 1.1.7 |
+| `server/META-INF/MANIFEST.MF` | Same |
+| `client/META-INF/MANIFEST.MF` | Same |
+| `shared/.../ASTME1394Constants.java` | `PLUGIN_VERSION` → 1.1.7 |
+| `README.md` | Install instructions + artifact table updated |
+
+### Final installation layout
+
+After running `distribution/build.sh` and copying the artifacts:
+
+```
+$MIRTH_HOME/extensions/datatype-astm-e1394/
+    ├── plugin.xml
+    ├── datatype-astm-e1394-shared.jar
+    ├── datatype-astm-e1394-server.jar
+    └── datatype-astm-e1394-client.jar
+```
+
+Restart Mirth Connect, and the "ASTM E1394" data type will appear in
+the channel source / destination connector data-type dropdown alongside
+the built-in HL7v2, DICOM, EDI, etc.
+
+---
+
+
+
+## v1.1.6 — Remove `.idea` directory
+
+### 41. IntelliJ IDEA hangs on project open
+
+**Symptom:** IntelliJ IDEA would hang indefinitely when opening the
+project, requiring a force-kill of the IDE process. The only recovery
+was to delete the `.idea` directory before re-opening the project.
+
+**Root cause:** The `.idea` directory shipped with the project contained
+pre-configured library definitions, artifact configurations, run
+configurations, and workspace settings that were specific to a particular
+IntelliJ version and a particular Mirth installation. When the user
+opened the project on a different machine with different jar paths or
+a different IntelliJ version, the IDE would try to load these stale
+configurations and hang — often while trying to index jars that didn't
+exist at the hardcoded paths.
+
+**Fix:** removed the entire `.idea` directory from the project. The
+`.iml` files (in `shared/`, `server/`, `client/`, `test/`) are kept
+because they define the module structure and source folders — IntelliJ
+can re-generate the rest of `.idea` automatically from these.
+
+**After this change:**
+
+* IntelliJ will auto-generate a fresh `.idea` on first open.
+* No pre-configured libraries — the user adds them via
+  **File → Project Structure → Libraries**.
+* No pre-configured artifacts — the user creates them via
+  **File → Project Structure → Artifacts** if needed.
+* No pre-configured run configurations — the user runs tests via
+  right-click → **Run** in the editor.
+* The production build script `distribution/build.sh` is unaffected and
+  remains the recommended way to build the JARs.
+
+Also removed the stale `out/` directory (compiled `.class` files from
+previous IntelliJ runs that may have been built against the wrong
+classpath).
+
+### Why not ship `.idea`?
+
+Shipping `.idea` with a project is generally considered bad practice
+because:
+
+1. **Path dependencies:** `.idea/libraries/*.xml` files hardcode absolute
+   jar paths (`$PROJECT_DIR$/../mirth-libs/server/mirth-server.jar`).
+   If the user's `mirth-libs/` folder has a different layout, IntelliJ
+   shows red X marks and may hang while indexing.
+2. **IDE version differences:** `.idea/workspace.xml` and
+   `.idea/artifacts/*.xml` formats change between IntelliJ versions. A
+   config written by IntelliJ 2023 may not load cleanly in IntelliJ 2024.
+3. **Personal preferences:** `.idea/workspace.xml` contains the user's
+   window layout, breakpoints, run configurations, etc. — these are
+   personal and shouldn't be shared.
+4. **Index corruption:** if the IDE crashes while writing `.idea/`, the
+   directory can become corrupted and cause hangs on subsequent opens.
+
+The `.iml` files are kept because they're stable across IDE versions
+and define the essential module structure (source folders, dependencies,
+exclude folders) that IntelliJ needs to set up the project.
+
+---
+
+
 
 ## v1.1.5 — IntelliJ module dependency fix
 

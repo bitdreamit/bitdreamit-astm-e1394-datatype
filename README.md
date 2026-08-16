@@ -53,29 +53,63 @@ bitdreamit-astm-e1394-datatype/
 
 ## IntelliJ IDEA setup
 
+> **No `.idea` directory is shipped with the project.** This is intentional
+> — a stale or corrupted `.idea` folder can cause IntelliJ to hang on
+> startup or fail to load the project. When you open the project for the
+> first time, IntelliJ will auto-generate a fresh `.idea` from the `.iml`
+> files and source folders.
+
 1. Copy Mirth jars into a sibling `mirth-libs/` folder so the IDE can resolve
    the Mirth Connect APIs at compile time:
 
    ```
    ../mirth-libs/server/mirth-server.jar
    ../mirth-libs/server/donkey-server.jar
-   ../mirth-libs/server/mirth-core.jar
+   ../mirth-libs/server/mirth-core.jar            (or mirth-client-core.jar)
    ../mirth-libs/client/mirth-client.jar
-   ../mirth-libs/client/mirth-core.jar
-   ../mirth-libs/client/miglayout-swing-4.2.jar    (optional — for MirthCheckBox / MirthTextField)
-   ../mirth-libs/client/log4j-1.2-api-2.17.2.jar   (optional)
+   ../mirth-libs/client/mirth-core.jar            (or mirth-client-core.jar)
+   ../mirth-libs/client/miglayout-swing-4.2.jar   (optional — for MirthCheckBox / MirthTextField)
+   ../mirth-libs/client/log4j-1.2-api-2.17.2.jar  (optional)
    ../mirth-libs/test/junit-4.13.2.jar
    ../mirth-libs/test/hamcrest-core-1.3.jar
    ```
 
 2. Open this folder in IntelliJ IDEA (`File → Open`).
 
-3. The four modules `shared`, `server`, `client`, `test` load automatically
-   from their respective `.iml` files.
+3. IntelliJ will prompt you to import the project. Accept the defaults —
+   it will detect the four `.iml` files (`shared`, `server`, `client`,
+   `test`) and set up the modules automatically.
+
+4. If IntelliJ asks whether to trust the project, click **Trust Project**.
+
+5. If you see red X marks on the Mirth library jars in
+   **File → Project Structure → Libraries**, that's normal — IntelliJ
+   shows red X for any jar root that doesn't exist on disk, but the
+   compilation will succeed using whichever jars are present.
+
+## Configuring the Mirth libraries in IntelliJ
+
+If IntelliJ doesn't auto-detect the libraries, set them up manually:
+
+1. **File → Project Structure → Libraries → + → Java**
+2. Select `../mirth-libs/server/` and add these jars:
+   - `mirth-server.jar`
+   - `donkey-server.jar`
+   - `mirth-core.jar` (or `mirth-client-core.jar`)
+   - `log4j-1.2-api-2.17.2.jar`
+3. Name the library `mirth-server`.
+4. Repeat for `../mirth-libs/client/` and name it `mirth-client`.
+5. Repeat for `../mirth-libs/test/` and name it `junit-4`.
+
+Then attach the libraries to the modules:
+
+1. **File → Project Structure → Modules → server → Dependencies → + → Library → mirth-server**
+2. **Modules → client → Dependencies → + → Library → mirth-client**
+3. **Modules → test → Dependencies → + → Library → mirth-server** (yes, the server library — the test needs it)
+4. **Modules → test → Dependencies → + → Library → junit-4**
+5. Click **Apply** and **OK**.
 
 ## Building in IntelliJ IDEA
-
-There are two ways to build the project:
 
 ### Option A: Build Project (compile only)
 
@@ -88,41 +122,43 @@ This does NOT produce JAR files — use Option B for that.
 
 ### Option B: Build Artifacts (produce JARs)
 
-**Build → Build Artifacts...** — shows a popup with four options:
+No artifacts are pre-configured (we removed `.idea` to avoid IDE hangs).
+You can create them manually:
 
-| Artifact | Output JAR | Contents |
-|----------|-----------|----------|
-| `astm-shared` | `bitdreamit-astm-e1394-datatype-shared.jar` | Shared module classes only |
-| `astm-server` | `bitdreamit-astm-e1394-datatype-server.jar` | Server module classes only |
-| `astm-client` | `bitdreamit-astm-e1394-datatype-client.jar` | Client module classes only |
-| **All** | (builds all three above) | All three JARs |
-
-Select an individual artifact to build just that JAR, or select **All**
-to build all three at once.
+1. **File → Project Structure → Artifacts → + → JAR → From modules with dependencies**
+2. For each JAR (shared, server, client):
+   - **Module:** select the module
+   - **Output directory:** `out/artifacts/<name>`
+   - **JAR files from libraries:** select "extract to the target JAR"
+   - **Manifest file:** `<module>/META-INF/MANIFEST.MF`
+3. Click **OK**.
+4. **Build → Build Artifacts → <name>** to build the JAR.
 
 Output goes to `out/artifacts/<artifact-name>/`.
 
-Each JAR includes a manifest from `<module>/META-INF/MANIFEST.MF` with
-version metadata (Implementation-Title, Implementation-Version,
-Mirth-Connect-Plugin-Type, etc.).
-
 ### Running tests in IntelliJ
 
-A JUnit run configuration `ASTME1394RoundTripTest` is pre-configured.
-Right-click it in the Run toolbar (or press Shift+F10) to run the test.
+No run configuration is pre-configured. To run the test:
+
+1. Open `test/src/com/bitdreamit/connect/plugins/datatypes/astm/test/ASTME1394RoundTripTest.java`
+2. Right-click anywhere in the editor → **Run 'ASTME1394RoundTripTest'**
+   (or press Ctrl+Shift+F10).
+
+IntelliJ will create a temporary run configuration automatically.
 
 ### Build artifacts vs. production build script
 
 | Feature | IntelliJ Artifacts | `distribution/build.sh` |
 |---------|-------------------|------------------------|
-| Produces JARs | Yes | Yes |
+| Produces JARs | Yes (manual setup) | Yes |
 | Produces standalone `plugin.xml` | No | Yes |
 | Runs tests | No (use Run config) | Yes (unless `SKIP_TESTS=1`) |
-| Includes version manifests | Yes | Yes |
+| Includes version manifests | Yes (from META-INF) | Yes |
 | Cross-platform | IntelliJ only | Any Unix with JDK |
+| IDE config required | Yes | No |
 
-For development, use IntelliJ artifacts. For production deployment, use
-`distribution/build.sh`.
+**Recommendation:** For production deployment, use `distribution/build.sh`.
+For development debugging, use IntelliJ's Build Project.
 
 ## Build & deploy
 
@@ -139,10 +175,12 @@ By default the script:
 1. Validates that every required Mirth jar is present under `../mirth-libs/`.
 2. Compiles `shared` → `server` → `client` → `test`.
 3. Runs `ASTME1394RoundTripTest` and fails the build if any test fails.
-4. Produces two signed-style JARs with manifest metadata in `out/`:
+4. Produces three JARs + a standalone `plugin.xml` in `out/`:
 
-   * `bitdreamit-astm-e1394-datatype-server.jar`
-   * `bitdreamit-astm-e1394-datatype-client.jar`
+   * `datatype-astm-e1394-shared.jar`
+   * `datatype-astm-e1394-server.jar`
+   * `datatype-astm-e1394-client.jar`
+   * `plugin.xml`
 
 Environment overrides:
 
@@ -155,22 +193,28 @@ Environment overrides:
 Install into Mirth Connect:
 
 ```bash
-mkdir -p $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype
-cp out/bitdreamit-astm-e1394-datatype-shared.jar $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/
-cp out/bitdreamit-astm-e1394-datatype-server.jar $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/
-cp out/bitdreamit-astm-e1394-datatype-client.jar $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/
-cp out/plugin.xml $MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/plugin.xml
+mkdir -p $MIRTH_HOME/extensions/datatype-astm-e1394
+cp out/datatype-astm-e1394-shared.jar $MIRTH_HOME/extensions/datatype-astm-e1394/
+cp out/datatype-astm-e1394-server.jar $MIRTH_HOME/extensions/datatype-astm-e1394/
+cp out/datatype-astm-e1394-client.jar $MIRTH_HOME/extensions/datatype-astm-e1394/
+cp out/plugin.xml $MIRTH_HOME/extensions/datatype-astm-e1394/plugin.xml
 # Restart Mirth Connect service.
 ```
 
-The build produces four output artifacts:
+The build produces four output artifacts. The naming convention follows
+Mirth Connect 4.5.x's built-in data-type plugins (e.g. `datatype-hl7v2-*`,
+`datatype-dicom-*`):
 
 | Artifact | Contents |
 |----------|----------|
-| `bitdreamit-astm-e1394-datatype-shared.jar` | Shared classes (`ASTME1394Constants`) — loaded by both server & client classloaders |
-| `bitdreamit-astm-e1394-datatype-server.jar` | Server classes (serializer, batch adaptor, auto-responder, etc.) |
-| `bitdreamit-astm-e1394-datatype-client.jar` | Client classes (settings panel, client plugin) |
+| `datatype-astm-e1394-shared.jar` | Shared classes (`ASTME1394Constants`) — loaded by both server & client classloaders |
+| `datatype-astm-e1394-server.jar` | Server classes (serializer, batch adaptor, auto-responder, etc.) |
+| `datatype-astm-e1394-client.jar` | Client classes (settings panel, client plugin) |
 | `plugin.xml` | Unified plugin metadata file (standalone, not inside any JAR) |
+
+The extension folder name **must** match the `path` attribute in
+`plugin.xml` (`datatype-astm-e1394`). Mirth's plugin loader uses the
+folder name to locate the JARs declared in the `<library>` elements.
 
 ## Canonical XML format
 

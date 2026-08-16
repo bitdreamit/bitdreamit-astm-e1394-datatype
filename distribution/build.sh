@@ -40,7 +40,7 @@ JAR="${JAR:-jar}"
 JAVA_BIN="${JAVA_BIN:-java}"
 
 # Version (mirrors plugin.xml pluginVersion + ASTME1394Constants.PLUGIN_VERSION).
-PLUGIN_VERSION="1.1.1"
+PLUGIN_VERSION="1.1.7"
 
 # Colors for status output (disabled when not a TTY).
 if [ -t 1 ]; then
@@ -211,8 +211,13 @@ EOF
 
 # ---------------------------------------------------------------------------
 # Package SHARED JAR (shared classes only — loaded by both server & client)
+#
+# JAR name follows the Mirth Connect 4.5.x convention used by the built-in
+# data-type plugins (e.g. datatype-hl7v2-shared.jar, datatype-dicom-shared.jar).
+# The extension folder name in $MIRTH_HOME/extensions/ must match the `path`
+# attribute in plugin.xml — i.e. `datatype-astm-e1394`.
 # ---------------------------------------------------------------------------
-SHARED_JAR="$OUT_DIR/bitdreamit-astm-e1394-datatype-shared.jar"
+SHARED_JAR="$OUT_DIR/datatype-astm-e1394-shared.jar"
 log "Packaging shared JAR: $SHARED_JAR"
 "$JAR" cfm "$SHARED_JAR" "$MANIFEST_DIR/shared-manifest.mf" \
     -C "$BUILD_DIR/shared" .
@@ -220,7 +225,7 @@ log "Packaging shared JAR: $SHARED_JAR"
 # ---------------------------------------------------------------------------
 # Package SERVER JAR (server classes only — shared classes are in shared.jar)
 # ---------------------------------------------------------------------------
-SERVER_JAR="$OUT_DIR/bitdreamit-astm-e1394-datatype-server.jar"
+SERVER_JAR="$OUT_DIR/datatype-astm-e1394-server.jar"
 log "Packaging server JAR: $SERVER_JAR"
 "$JAR" cfm "$SERVER_JAR" "$MANIFEST_DIR/server-manifest.mf" \
     -C "$BUILD_DIR/server" .
@@ -228,7 +233,7 @@ log "Packaging server JAR: $SERVER_JAR"
 # ---------------------------------------------------------------------------
 # Package CLIENT JAR (client classes only — shared classes are in shared.jar)
 # ---------------------------------------------------------------------------
-CLIENT_JAR="$OUT_DIR/bitdreamit-astm-e1394-datatype-client.jar"
+CLIENT_JAR="$OUT_DIR/datatype-astm-e1394-client.jar"
 log "Packaging client JAR: $CLIENT_JAR"
 "$JAR" cfm "$CLIENT_JAR" "$MANIFEST_DIR/client-manifest.mf" \
     -C "$BUILD_DIR/client" .
@@ -252,9 +257,9 @@ echo "  $CLIENT_JAR"
 echo "  $PLUGIN_XML"
 echo
 echo "Install into Mirth Connect:"
-echo "  mkdir -p \$MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype"
-echo "  cp $SHARED_JAR  \$MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/"
-echo "  cp $SERVER_JAR  \$MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/"
-echo "  cp $CLIENT_JAR  \$MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/"
-echo "  cp $PLUGIN_XML  \$MIRTH_HOME/extensions/bitdreamit-astm-e1394-datatype/plugin.xml"
+echo "  mkdir -p \$MIRTH_HOME/extensions/datatype-astm-e1394"
+echo "  cp $SHARED_JAR  \$MIRTH_HOME/extensions/datatype-astm-e1394/"
+echo "  cp $SERVER_JAR  \$MIRTH_HOME/extensions/datatype-astm-e1394/"
+echo "  cp $CLIENT_JAR  \$MIRTH_HOME/extensions/datatype-astm-e1394/"
+echo "  cp $PLUGIN_XML  \$MIRTH_HOME/extensions/datatype-astm-e1394/plugin.xml"
 echo "  # Restart Mirth Connect service."

@@ -3,14 +3,14 @@
   Copy of the unified plugin.xml — kept here for IDE / IntelliJ reference.
   The build script uses the copy in server/resources/plugin.xml as the
   single source of truth and installs it as plugin.xml (not .server / .client)
-  in the extension directory.
+  in the extension folder.
 -->
-<pluginMetaData path="bitdreamit-astm-e1394-datatype"
+<pluginMetaData path="datatype-astm-e1394"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="plugin.xsd">
-    <name>ASTM E1394 Data Type (bitdreamit)</name>
+    <name>ASTM E1394 Data Type</name>
     <author>Bit Dream IT</author>
-    <pluginVersion>1.1.1</pluginVersion>
+    <pluginVersion>1.1.7</pluginVersion>
     <mirthVersion>4.5.2</mirthVersion>
     <url>https://bitdreamit.com</url>
     <description>ASTM E1394-91/97 record-level parser/serializer (H/P/O/R/C/Q/M/L). Provides the Administrator UI settings panel for configuring default delimiters and parser options.</description>
@@ -20,7 +20,7 @@
     <clientClasses>
         <string>com.bitdreamit.connect.plugins.datatypes.astm.client.ASTME1394DataTypeClientPlugin</string>
     </clientClasses>
-    <library type="CLIENT" path="bitdreamit-astm-e1394-datatype-client.jar" />
-    <library type="SHARED" path="bitdreamit-astm-e1394-datatype-shared.jar" />
-    <library type="SERVER" path="bitdreamit-astm-e1394-datatype-server.jar" />
+    <library type="CLIENT" path="datatype-astm-e1394-client.jar" />
+    <library type="SHARED" path="datatype-astm-e1394-shared.jar" />
+    <library type="SERVER" path="datatype-astm-e1394-server.jar" />
 </pluginMetaData>

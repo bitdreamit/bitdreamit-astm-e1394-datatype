@@ -97,7 +97,7 @@ public final class ASTME1394Constants {
     // Plugin Metadata
     // -----------------------------------------------------------------
     public static final String PLUGIN_NAME    = "ASTM E1394";
-    public static final String PLUGIN_VERSION = "1.1.0";
+    public static final String PLUGIN_VERSION = "1.1.7";
 
     /** Root XML element produced by {@code ASTME1394Deserializer#toXML(String)}. */
     public static final String XML_ROOT_ELEMENT = "ASTM";
