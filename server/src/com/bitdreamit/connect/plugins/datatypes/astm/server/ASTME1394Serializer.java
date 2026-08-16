@@ -7,7 +7,6 @@ import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 
 import com.mirth.connect.donkey.model.message.MessageSerializer;
-import com.mirth.connect.donkey.model.message.MessageSerializerException;
 import com.mirth.connect.model.converters.IMessageSerializer;
 import com.mirth.connect.model.datatype.SerializerProperties;
 
@@ -31,8 +30,8 @@ import com.mirth.connect.model.datatype.SerializerProperties;
  * <p><b>Inheritance chain (Mirth 4.5.x):</b></p>
  * <pre>
  *   com.mirth.connect.donkey.model.message.MessageSerializer  (abstract class)
- *     └─ declares: populateMetaData(String, Map)  [abstract]
- *     └─ declares: transformWithoutSerializing(String, MessageSerializer)  [abstract]
+ *     └─ declares: populateMetaData(String, Map)  [abstract, no throws]
+ *     └─ declares: transformWithoutSerializing(String, MessageSerializer)  [abstract, no throws]
  *
  *   com.mirth.connect.model.converters.IMessageSerializer  (interface)
  *     └─ extends MessageSerializer
@@ -44,6 +43,14 @@ import com.mirth.connect.model.datatype.SerializerProperties;
  * interface methods <b>and</b> the abstract-class methods from
  * {@link MessageSerializer}. All eight abstract methods must be
  * implemented.</p>
+ *
+ * <p><b>Exception handling:</b> In Mirth Connect 4.5.x none of the
+ * {@link IMessageSerializer} / {@link MessageSerializer} methods declare
+ * any checked exceptions — adding a {@code throws} clause on an override
+ * is a compile error ("overridden method does not throw..."). All parser
+ * / serializer failures are wrapped into {@link RuntimeException} so they
+ * propagate through Mirth's transformer pipeline as unchecked errors,
+ * matching the behaviour of the built-in HL7v2 / XML / JSON serializers.</p>
  */
 public class ASTME1394Serializer implements IMessageSerializer {
 
@@ -163,13 +170,18 @@ public class ASTME1394Serializer implements IMessageSerializer {
      * <p>Delegates to {@link #getMetaDataFromMessage(String)} and merges the
      * result into the supplied map.</p>
      *
+     * <p><b>API note:</b> The parent {@link MessageSerializer} class declares
+     * this method <b>without</b> a {@code throws} clause. Adding
+     * {@code throws MessageSerializerException} here would be a compile error
+     * (overridden method does not throw that checked exception). Any failure
+     * is therefore wrapped into a {@link RuntimeException} instead, which is
+     * allowed by the JLS.</p>
+     *
      * @param message the raw inbound message text
      * @param map     the metadata map to populate (never {@code null})
-     * @throws MessageSerializerException if metadata extraction fails
-     *                                    (per the parent contract)
      */
     @Override
-    public void populateMetaData(String message, Map<String, Object> map) throws MessageSerializerException {
+    public void populateMetaData(String message, Map<String, Object> map) {
         if (message == null || map == null) {
             return;
         }
@@ -179,7 +191,12 @@ public class ASTME1394Serializer implements IMessageSerializer {
                 map.putAll(meta);
             }
         } catch (Exception e) {
-            throw new MessageSerializerException("Failed to populate ASTM E1394 metadata", e);
+            // MessageSerializerException only exposes single-arg constructors
+            // (Throwable) and (String) in Mirth 4.5.x — no (String, Throwable).
+            // Wrap the cause into the message string and re-throw.
+            logger.error("Failed to populate ASTM E1394 metadata", e);
+            throw new RuntimeException(
+                "Failed to populate ASTM E1394 metadata: " + e.getMessage(), e);
         }
     }
 
@@ -193,13 +210,16 @@ public class ASTME1394Serializer implements IMessageSerializer {
      * "serialization IS required — please call {@code toXML} / {@code fromXML}
      * normally".</p>
      *
+     * <p><b>API note:</b> The parent {@link MessageSerializer} class declares
+     * this method <b>without</b> a {@code throws} clause in Mirth 4.5.x, so
+     * we must not declare one either.</p>
+     *
      * @param message            the raw message text
      * @param messageSerializer  another serializer to delegate to (unused)
      * @return {@code null} — always require full serialization
-     * @throws MessageSerializerException per the parent contract (never thrown)
      */
     @Override
-    public String transformWithoutSerializing(String message, MessageSerializer messageSerializer) throws MessageSerializerException {
+    public String transformWithoutSerializing(String message, MessageSerializer messageSerializer) {
         // Returning null tells the framework: "please serialize normally".
         return null;
     }

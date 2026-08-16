@@ -5,17 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="95656bc7-1cf0-4df8-929c-0c4e3c72eaa1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/mirth_client.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/mirth_client.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/libraries/mirth_server.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/libraries/mirth_server.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/PRODUCTION_NOTES.md" beforeDir="false" afterPath="$PROJECT_DIR$/PRODUCTION_NOTES.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client/client.iml" beforeDir="false" afterPath="$PROJECT_DIR$/client/client.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeClientPlugin.java" beforeDir="false" afterPath="$PROJECT_DIR$/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeClientPlugin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server.iml" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394Serializer.java" beforeDir="false" afterPath="$PROJECT_DIR$/server/src/com/bitdreamit/connect/plugins/datatypes/astm/server/ASTME1394Serializer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shared/shared.iml" beforeDir="false" afterPath="$PROJECT_DIR$/shared/shared.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/src/com/bitdreamit/connect/plugins/datatypes/astm/test/ASTME1394RoundTripTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/test/src/com/bitdreamit/connect/plugins/datatypes/astm/test/ASTME1394RoundTripTest.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

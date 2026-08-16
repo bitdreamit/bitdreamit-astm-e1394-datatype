@@ -1,8 +1,13 @@
 package com.bitdreamit.connect.plugins.datatypes.astm.test;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.junit.Test;
+import org.w3c.dom.Document;
 import static org.junit.Assert.*;
 
 import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394BatchAdaptor;
@@ -11,7 +16,6 @@ import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394Deserializa
 import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394Deserializer;
 import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394SerializationProperties;
 import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394Serializer;
-import com.mirth.connect.util.XmlUtil;
 
 /**
  * Round-trip and feature tests for the ASTM E1394 data type plugin.
@@ -30,6 +34,15 @@ import com.mirth.connect.util.XmlUtil;
  * {@code \^&} in field 2 of the {@code H} record, which decodes to:
  * repeat={@code \}, component={@code ^}, escape={@code &}. The field
  * separator is always {@code |}.</p>
+ *
+ * <p><b>XML parsing:</b> The test uses the standard JDK
+ * {@link javax.xml.parsers.DocumentBuilder} to parse XML strings into DOM
+ * {@link Document} objects, instead of the Mirth-specific
+ * {@code com.mirth.connect.util.XmlUtil}. The {@code XmlUtil} class was
+ * removed from the Mirth Connect 4.5.x public API; using the JDK parser
+ * keeps the test source-compatible with every Mirth version and removes
+ * the runtime dependency on {@code mirth-server.jar} for the test classpath
+ * (only {@code junit.jar} + the plugin's own jars are needed).</p>
  */
 public class ASTME1394RoundTripTest {
 
@@ -44,6 +57,25 @@ public class ASTME1394RoundTripTest {
         "O|1|SPEC001||^^^GLU|R||20260813120000|||||A||||1\r" +
         "R|1|^^^GLU|98|mg/dL|70-99||N||F||ANALYZER01|20260813121500\r" +
         "L|1|N\r";
+
+    /**
+     * Parse an XML string into a DOM {@link Document} using the JDK's
+     * built-in {@link DocumentBuilder}. Replaces the legacy
+     * {@code XmlUtil.parse(xml)} call that was removed from the Mirth
+     * Connect 4.5.x public API.
+     *
+     * @param xml the XML string to parse
+     * @return the parsed DOM document
+     * @throws Exception on parser / IO failure
+     */
+    private static Document parseXml(String xml) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        // Namespace-aware = false matches the serializer's behaviour and
+        // keeps element-name comparisons simple (no namespace prefix).
+        factory.setNamespaceAware(false);
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        return builder.parse(new ByteArrayInputStream(xml.getBytes("UTF-8")));
+    }
 
     @Test
     public void testRoundTrip() throws Exception {
@@ -62,7 +94,7 @@ public class ASTME1394RoundTripTest {
         assertTrue("XML must contain <L> terminator record", xml.contains("<L>"));
 
         // Round-trip: XML → ASTM text should match the original.
-        org.w3c.dom.Document doc = XmlUtil.parse(xml);
+        Document doc = parseXml(xml);
         ASTME1394Serializer serializer = new ASTME1394Serializer(serProps, desProps);
         String reconstructed = serializer.fromXML(doc);
 
@@ -120,7 +152,7 @@ public class ASTME1394RoundTripTest {
         assertTrue("Escape &R must decode to \\", xml.contains("\\"));
         assertTrue("Escape &E must decode to &", xml.contains("&amp;") || xml.contains("&"));
 
-        org.w3c.dom.Document doc = XmlUtil.parse(xml);
+        Document doc = parseXml(xml);
         ASTME1394Serializer ser = new ASTME1394Serializer(serProps, desProps);
         String out = ser.fromXML(doc);
 

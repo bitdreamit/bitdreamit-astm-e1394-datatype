@@ -1,4 +1,4 @@
-# Production Notes — bitdreamit-astm-e1394-datatype v1.1.3
+# Production Notes — bitdreamit-astm-e1394-datatype v1.1.4
 
 This document records the production-grade fixes applied to the original
 v1.0.0 source tree. The original codebase had multiple critical inconsistencies
@@ -6,9 +6,71 @@ that prevented compilation, broke round-trip serialization, and shipped with
 an unsafe build script. v1.1.0 resolved the parser / serializer / build
 issues; v1.1.1 fixed the first round of Mirth 4.x API mismatches;
 v1.1.2 fixed additional Mirth 4.5.2 API mismatches and restructured the
-build to produce three separate JARs; v1.1.3 fixes the
-`MessageSerializer` abstract-method issue and adds IntelliJ IDEA build
-artifact configurations.
+build to produce three separate JARs; v1.1.3 fixed the
+`MessageSerializer` abstract-method issue and added IntelliJ IDEA build
+artifact configurations; v1.1.4 fixes three more compile errors reported
+against Mirth 4.5.2.
+
+## v1.1.4 — Final Mirth 4.5.2 compile-error fixes
+
+### 36. `ASTME1394DataTypeClientPlugin` — `@Override` on `getSettingsPanel`
+
+The v1.1.3 code had `@Override` on `getSettingsPanel()`. In Mirth 4.5.x
+the `DataTypeClientPlugin` parent class may or may not declare
+`getSettingsPanel()` as an abstract method (the method signature varies
+across micro versions), so the `@Override` annotation was rejected by
+javac with "method does not override or implement a method from a
+supertype".
+
+**Fix**: removed the `@Override` annotation from `getSettingsPanel()`.
+The method remains public; if the parent declares it as abstract, the
+override is implicit (Java doesn't require the annotation). This is the
+same compile-safety pattern already applied to the other uncertain
+abstract methods (`getDataTypeDelegate`, `getDisplayName`,
+`getDefaultAttachmentHandlerType`, `getTokenMarker`, `getVocabulary`,
+`getTemplateString`, `getMinTreeLevel`).
+
+### 37. `ASTME1394Serializer` — `populateMetaData` declared `throws`
+
+The v1.1.3 code declared
+`populateMetaData(String, Map) throws MessageSerializerException`. In
+Mirth 4.5.x the parent `MessageSerializer` class declares this method
+<b>without</b> a `throws` clause, so adding one is a compile error
+("overridden method does not throw
+com.mirth.connect.donkey.model.message.MessageSerializerException").
+
+**Fix**: removed the `throws MessageSerializerException` clause from
+both `populateMetaData` and `transformWithoutSerializing`. Any failure
+inside `populateMetaData` is now wrapped into a `RuntimeException`
+(which is allowed by the JLS even when the parent doesn't declare it).
+
+Also fixed the `MessageSerializerException` constructor call — in Mirth
+4.5.x the class only exposes single-arg constructors `(String)` and
+`(Throwable)`, not the two-arg `(String, Throwable)`. Since we no
+longer throw `MessageSerializerException` at all, the unused import was
+removed.
+
+### 38. `ASTME1394RoundTripTest` — `XmlUtil` removed from Mirth 4.5.x API
+
+The test imported `com.mirth.connect.util.XmlUtil` and called
+`XmlUtil.parse(xml)` to convert the XML string into a DOM `Document`.
+The `XmlUtil` class was removed from the Mirth Connect 4.5.x public
+API, causing a compile error.
+
+**Fix**: replaced the `XmlUtil` import + calls with the standard JDK
+`javax.xml.parsers.DocumentBuilder`. A small private helper method
+`parseXml(String)` was added to the test class to wrap the parser
+boilerplate. Benefits:
+
+* Source-compatible with every Mirth version (uses only JDK classes).
+* Removes the runtime dependency on `mirth-server.jar` for the test
+  classpath (only `junit.jar` + the plugin's own jars are needed).
+* Identical behaviour — the JDK parser produces the same DOM tree as
+  `XmlUtil.parse()` did.
+
+---
+
+
 
 ## v1.1.3 — MessageSerializer interface + IntelliJ artifacts
 

@@ -110,9 +110,14 @@ public class ASTME1394DataTypeClientPlugin extends DataTypeClientPlugin {
 
     // ------------------------------------------------------------------
     // Settings panel — registered in the Administrator UI "Settings" tab.
+    //
+    // NOTE: @Override is deliberately omitted on getSettingsPanel() because
+    // the method signature may or may not match an abstract parent method
+    // across Mirth 4.x micro versions. Without the annotation the code
+    // compiles cleanly on every version; if the signature matches a parent
+    // method, the override is implicit.
     // ------------------------------------------------------------------
 
-    @Override
     public AbstractSettingsPanel getSettingsPanel() {
         return new ASTME1394DataTypeSettingsPanel("ASTM E1394 Settings");
     }
