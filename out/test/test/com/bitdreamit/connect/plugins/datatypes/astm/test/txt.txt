@@ -1,0 +1,45 @@
+D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394BatchAdaptor.java:259:41
+java: cannot find symbol
+  symbol:   class BatchAdaptor
+  location: class com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394BatchAdaptor
+
+
+  D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394BatchAdaptorFactory.java:22:9
+  java: constructor DebuggableBatchAdaptorFactory in class com.mirth.connect.server.message.DebuggableBatchAdaptorFactory cannot be applied to given types;
+    required: com.mirth.connect.donkey.server.channel.SourceConnector,com.mirth.connect.model.datatype.SerializerProperties
+    found: com.mirth.connect.donkey.server.channel.SourceConnector
+    reason: actual and formal argument lists differ in length
+
+
+    ==============
+
+        /**
+         * Setter for the batch script. The ASTM E1394 plugin does not use
+         * JavaScript batch scripts (splitting is done natively), so this
+         * method is a no-op. It exists only to satisfy the
+         * {@code BatchProperties} contract.
+         */
+        @Override
+        public void setBatchScript(String batchScript) {
+            // No-op — native batch adaptor handles splitting.
+        }
+
+        D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394BatchProperties.java:116:5
+        java: method does not override or implement a method from a supertype
+
+        ====================
+
+        D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394Serializer.java:167:5
+        java: method does not override or implement a method from a supertype
+
+            /**
+             * Return the segment delimiter used for deserialization.
+             *
+             * <p>ASTM E1394 uses CR ({@code \r}) as the record/segment delimiter.
+             * Mirth's framework calls this to know how to split the inbound raw
+             * message into segments for the batch reader.</p>
+             */
+            @Override
+            public String getDeserializationSegmentDelimiter() {
+                return "\r";
+            }

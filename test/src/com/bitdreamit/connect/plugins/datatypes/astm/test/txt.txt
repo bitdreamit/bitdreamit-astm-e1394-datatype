@@ -1,45 +1,17 @@
-D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394BatchAdaptor.java:259:41
-java: cannot find symbol
-  symbol:   class BatchAdaptor
-  location: class com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394BatchAdaptor
+D:\Java\bitdreamit-astm-e1394-datatype\client\src\com\bitdreamit\connect\plugins\datatypes\astm\client\ASTME1394DataTypeClientPlugin.java
+java: /D:/Java/bitdreamit-astm-e1394-datatype/client/src/com/bitdreamit/connect/plugins/datatypes/astm/client/ASTME1394DataTypeClientPlugin.java uses unchecked or unsafe operations.
+D:\Java\bitdreamit-astm-e1394-datatype\client\src\com\bitdreamit\connect\plugins\datatypes\astm\client\ASTME1394DataTypeClientPlugin.java
+java: Recompile with -Xlint:unchecked for details.
 
 
-  D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394BatchAdaptorFactory.java:22:9
-  java: constructor DebuggableBatchAdaptorFactory in class com.mirth.connect.server.message.DebuggableBatchAdaptorFactory cannot be applied to given types;
-    required: com.mirth.connect.donkey.server.channel.SourceConnector,com.mirth.connect.model.datatype.SerializerProperties
-    found: com.mirth.connect.donkey.server.channel.SourceConnector
-    reason: actual and formal argument lists differ in length
+D:\Java\bitdreamit-astm-e1394-datatype\client\src\com\bitdreamit\connect\plugins\datatypes\astm\client\ASTME1394DataTypeCodeTemplatePlugin.java:16:8
+java: constructor DataTypeCodeTemplatePlugin in class com.mirth.connect.plugins.DataTypeCodeTemplatePlugin cannot be applied to given types;
+  required: java.lang.String
+  found: no arguments
+  reason: actual and formal argument lists differ in length
 
 
-    ==============
-
-        /**
-         * Setter for the batch script. The ASTM E1394 plugin does not use
-         * JavaScript batch scripts (splitting is done natively), so this
-         * method is a no-op. It exists only to satisfy the
-         * {@code BatchProperties} contract.
-         */
-        @Override
-        public void setBatchScript(String batchScript) {
-            // No-op — native batch adaptor handles splitting.
-        }
-
-        D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394BatchProperties.java:116:5
-        java: method does not override or implement a method from a supertype
-
-        ====================
-
-        D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394Serializer.java:167:5
-        java: method does not override or implement a method from a supertype
-
-            /**
-             * Return the segment delimiter used for deserialization.
-             *
-             * <p>ASTM E1394 uses CR ({@code \r}) as the record/segment delimiter.
-             * Mirth's framework calls this to know how to split the inbound raw
-             * message into segments for the batch reader.</p>
-             */
-            @Override
-            public String getDeserializationSegmentDelimiter() {
-                return "\r";
-            }
+D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394Serializer.java
+java: Some input files use unchecked or unsafe operations.
+D:\Java\bitdreamit-astm-e1394-datatype\shared\src\com\bitdreamit\connect\plugins\datatypes\astm\shared\ASTME1394Serializer.java
+java: Recompile with -Xlint:unchecked for details.
