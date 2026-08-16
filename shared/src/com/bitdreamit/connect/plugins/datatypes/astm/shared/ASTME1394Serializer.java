@@ -1,4 +1,4 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.shared;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -157,31 +157,43 @@ public class ASTME1394Serializer implements IMessageSerializer {
         return true;
     }
 
+    /**
+     * Return the segment delimiter used for deserialization.
+     *
+     * <p>ASTM E1394 uses CR ({@code \r}) as the record/segment delimiter.
+     * Mirth's framework calls this to know how to split the inbound raw
+     * message into segments for the batch reader.</p>
+     *
+     * <p>Not declared as {@code @Override} because the parent
+     * {@code MessageSerializer} class does not declare this method as
+     * abstract in Mirth 4.5.x — it's a regular method in HL7v2's
+     * {@code ER7Serializer} too. The framework calls it via reflection
+     * or duck-typing if present.</p>
+     */
+    public String getDeserializationSegmentDelimiter() {
+        return "\r";
+    }
+
     // ------------------------------------------------------------------
     // MessageSerializer abstract-class methods
     // (inherited via IMessageSerializer extends MessageSerializer)
+    //
+    // NOTE: The parent declares these with RAW Map types (not
+    // Map<String, Object>). We match that exactly — using parameterized
+    // types here would cause a compile error because Java's override
+    // rules don't allow Map<String,Object> to override raw Map.
     // ------------------------------------------------------------------
 
     /**
      * Populate the supplied metadata map with key/value pairs extracted from
-     * the inbound message. Called by Mirth's framework after deserialization
-     * to attach metadata to the {@code MessageObject} for routing / filtering.
-     *
-     * <p>Delegates to {@link #getMetaDataFromMessage(String)} and merges the
-     * result into the supplied map.</p>
-     *
-     * <p><b>API note:</b> The parent {@link MessageSerializer} class declares
-     * this method <b>without</b> a {@code throws} clause. Adding
-     * {@code throws MessageSerializerException} here would be a compile error
-     * (overridden method does not throw that checked exception). Any failure
-     * is therefore wrapped into a {@link RuntimeException} instead, which is
-     * allowed by the JLS.</p>
+     * the inbound message.
      *
      * @param message the raw inbound message text
      * @param map     the metadata map to populate (never {@code null})
      */
+    @SuppressWarnings("unchecked")
     @Override
-    public void populateMetaData(String message, Map<String, Object> map) {
+    public void populateMetaData(String message, Map map) {
         if (message == null || map == null) {
             return;
         }
@@ -191,9 +203,6 @@ public class ASTME1394Serializer implements IMessageSerializer {
                 map.putAll(meta);
             }
         } catch (Exception e) {
-            // MessageSerializerException only exposes single-arg constructors
-            // (Throwable) and (String) in Mirth 4.5.x — no (String, Throwable).
-            // Wrap the cause into the message string and re-throw.
             logger.error("Failed to populate ASTM E1394 metadata", e);
             throw new RuntimeException(
                 "Failed to populate ASTM E1394 metadata: " + e.getMessage(), e);
@@ -203,50 +212,31 @@ public class ASTME1394Serializer implements IMessageSerializer {
     /**
      * Fast-path transformation that skips XML serialization.
      *
-     * <p>Called by Mirth's framework when
-     * {@link #isSerializationRequired(boolean)} returns {@code false}. Since
-     * this serializer always returns {@code true} from that method, the
-     * framework will never call this method. Returning {@code null} signals
-     * "serialization IS required — please call {@code toXML} / {@code fromXML}
-     * normally".</p>
-     *
-     * <p><b>API note:</b> The parent {@link MessageSerializer} class declares
-     * this method <b>without</b> a {@code throws} clause in Mirth 4.5.x, so
-     * we must not declare one either.</p>
-     *
-     * @param message            the raw message text
-     * @param messageSerializer  another serializer to delegate to (unused)
-     * @return {@code null} — always require full serialization
+     * <p>Since {@link #isSerializationRequired(boolean)} always returns
+     * {@code true}, the framework never calls this. Returning {@code null}
+     * signals "serialization IS required".</p>
      */
     @Override
     public String transformWithoutSerializing(String message, MessageSerializer messageSerializer) {
-        // Returning null tells the framework: "please serialize normally".
         return null;
     }
 
     // ------------------------------------------------------------------
-    // Metadata extraction (used by both getMetaDataFromMessage and
-    // populateMetaData)
+    // Metadata extraction
     // ------------------------------------------------------------------
 
     /**
      * Extract metadata from an inbound ASTM E1394 message. Returns the
      * record-type letters observed in the message so Mirth's router /
-     * filter steps can key off them. Always returns a non-null map (empty
-     * if the message is null or empty).
-     *
-     * <p>The return type is {@code Map<String, Object>} to match the
-     * {@link IMessageSerializer} contract in Mirth Connect 4.x (the
-     * interface declares {@code Map<String, Object>}, not
-     * {@code Map<String, String>}).</p>
+     * filter steps can key off them.
      */
+    @SuppressWarnings("unchecked")
     @Override
-    public Map<String, Object> getMetaDataFromMessage(String message) {
+    public Map getMetaDataFromMessage(String message) {
         Map<String, Object> meta = new LinkedHashMap<String, Object>();
         if (message == null || message.isEmpty()) {
             return meta;
         }
-        // Record the leading letter of every non-empty line.
         StringBuilder types = new StringBuilder();
         String normalized = message.replace("\r\n", "\r").replace("\n", "\r");
         for (String line : normalized.split("\r", -1)) {
@@ -259,7 +249,6 @@ public class ASTME1394Serializer implements IMessageSerializer {
         }
         if (types.length() > 0) {
             meta.put("recordTypes", types.toString());
-            // The first record type is conventionally the message type.
             meta.put("type", String.valueOf(types.charAt(0)));
         }
         meta.put("encoding", serProps.getEncoding());

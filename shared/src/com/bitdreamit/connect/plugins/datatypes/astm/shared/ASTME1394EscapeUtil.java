@@ -1,4 +1,4 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.shared;
 
 /**
  * ASTM E1394 escape-sequence handling utility.

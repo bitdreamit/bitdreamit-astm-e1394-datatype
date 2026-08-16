@@ -1,4 +1,4 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.shared;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -51,7 +51,7 @@ public class ASTME1394DeserializationProperties extends DeserializationPropertie
 
     @Override
     @SuppressWarnings("unchecked")
-    public Map<String, DataTypePropertyDescriptor> getPropertyDescriptors() {
+    public Map getPropertyDescriptors() {
         Map<String, DataTypePropertyDescriptor> props = new LinkedHashMap<String, DataTypePropertyDescriptor>();
 
         props.put("fieldDelimiter",            new DataTypePropertyDescriptor(String.valueOf(fieldDelimiter),           "Field Delimiter",            "Inbound field delimiter (default |).",                                          PropertyEditorType.STRING));
@@ -172,10 +172,16 @@ public class ASTME1394DeserializationProperties extends DeserializationPropertie
     @Override public void migrate3_3_0(DonkeyElement e) {}
     @Override public void migrate3_4_0(DonkeyElement e) {}
     @Override public void migrate3_5_0(DonkeyElement e) {}
+    @Override public void migrate3_6_0(DonkeyElement e) {}
+    @Override public void migrate3_7_0(DonkeyElement e) {}
+    @Override public void migrate3_9_0(DonkeyElement e) {}
+    @Override public void migrate3_11_0(DonkeyElement e) {}
+    @Override public void migrate3_11_1(DonkeyElement e) {}
+    @Override public void migrate3_12_0(DonkeyElement e) {}
 
     @Override
     @SuppressWarnings("unchecked")
-    public Map<String, Object> getPurgedProperties() {
+    public Map getPurgedProperties() {
         Map<String, Object> purged = new HashMap<String, Object>();
         purged.put("deriveDelimitersFromHeader", deriveDelimitersFromHeader);
         purged.put("maxMessageSize",            maxMessageSize);

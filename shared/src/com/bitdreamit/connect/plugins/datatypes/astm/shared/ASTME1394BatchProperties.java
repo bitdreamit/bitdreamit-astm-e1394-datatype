@@ -1,4 +1,4 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.shared;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -36,7 +36,7 @@ public class ASTME1394BatchProperties extends BatchProperties {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Map<String, DataTypePropertyDescriptor> getPropertyDescriptors() {
+    public Map getPropertyDescriptors() {
         Map<String, DataTypePropertyDescriptor> props = new LinkedHashMap<String, DataTypePropertyDescriptor>();
 
         props.put("splitByRecord",     new DataTypePropertyDescriptor(splitByRecord,    "Split by Record",      "Treat each ASTM record as a separate message in batch.",                      PropertyEditorType.BOOLEAN));
@@ -93,18 +93,31 @@ public class ASTME1394BatchProperties extends BatchProperties {
     public void    setIncludeTerminator(boolean v) { this.includeTerminator = v; }
 
     /**
-     * Mirth Connect's {@code BatchProperties} contract requires a batch
-     * splitting script (JavaScript) that the framework evaluates to split
-     * a batch into individual messages. The ASTM E1394 plugin performs
-     * batch splitting natively in {@link ASTME1394BatchAdaptor} (using the
-     * H..L boundary / record / no-split strategy configured via
-     * {@link #setSplitBatchBy(String)}), so no JavaScript snippet is
-     * required — return {@code null} to signal the framework that the
-     * native batch adaptor handles splitting.
+     * Return the batch splitting script (JavaScript).
+     *
+     * <p>The ASTM E1394 plugin performs batch splitting natively in
+     * {@link ASTME1394BatchAdaptor} (using the H..L boundary / record /
+     * no-split strategy configured via {@link #setSplitBatchBy(String)}),
+     * so no JavaScript snippet is required — return {@code null} to signal
+     * the framework that the native batch adaptor handles splitting.</p>
      */
     @Override
     public String getBatchScript() {
         return null;
+    }
+
+    /**
+     * Setter for the batch script.
+     *
+     * <p>Not declared as {@code @Override} because the parent
+     * {@code BatchProperties} class does not declare a {@code setBatchScript}
+     * method in Mirth 4.5.x — only the getter is abstract. HL7v2's
+     * {@code HL7v2BatchProperties.setBatchScript(String)} is also a regular
+     * method, not an override. This method is a no-op because the ASTM
+     * plugin doesn't use JavaScript batch scripts.</p>
+     */
+    public void setBatchScript(String batchScript) {
+        // No-op — native batch adaptor handles splitting.
     }
 
     @Override public void migrate3_0_1(DonkeyElement e) {}
@@ -114,10 +127,16 @@ public class ASTME1394BatchProperties extends BatchProperties {
     @Override public void migrate3_3_0(DonkeyElement e) {}
     @Override public void migrate3_4_0(DonkeyElement e) {}
     @Override public void migrate3_5_0(DonkeyElement e) {}
+    @Override public void migrate3_6_0(DonkeyElement e) {}
+    @Override public void migrate3_7_0(DonkeyElement e) {}
+    @Override public void migrate3_9_0(DonkeyElement e) {}
+    @Override public void migrate3_11_0(DonkeyElement e) {}
+    @Override public void migrate3_11_1(DonkeyElement e) {}
+    @Override public void migrate3_12_0(DonkeyElement e) {}
 
     @Override
     @SuppressWarnings("unchecked")
-    public Map<String, Object> getPurgedProperties() {
+    public Map getPurgedProperties() {
         Map<String, Object> purged = new HashMap<String, Object>();
         purged.put("splitByRecord",     splitByRecord);
         purged.put("batchTimeout",      batchTimeout);

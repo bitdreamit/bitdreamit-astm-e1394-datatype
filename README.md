@@ -162,7 +162,13 @@ For development debugging, use IntelliJ's Build Project.
 
 ## Build & deploy
 
-The build script is hardened for production use:
+### Prerequisites
+
+1. Install JDK 8+ (`java -version` to verify).
+2. Create a `mirth-libs/` folder **next to** the project folder containing
+   the Mirth 4.5.x JARs (see "IntelliJ IDEA setup" above for the list).
+
+### Build
 
 ```bash
 cd distribution
@@ -170,27 +176,46 @@ chmod +x build.sh
 ./build.sh
 ```
 
-By default the script:
+The build script:
 
 1. Validates that every required Mirth jar is present under `../mirth-libs/`.
 2. Compiles `shared` → `server` → `client` → `test`.
-3. Runs `ASTME1394RoundTripTest` and fails the build if any test fails.
-4. Produces three JARs + a standalone `plugin.xml` in `out/`:
+3. Runs `ASTME1394RoundTripTest` (unless `SKIP_TESTS=1`).
+4. Produces in `out/`:
 
-   * `datatype-astm-e1394-shared.jar`
-   * `datatype-astm-e1394-server.jar`
-   * `datatype-astm-e1394-client.jar`
-   * `plugin.xml`
+   | File | Purpose |
+   |------|---------|
+   | `datatype-astm-e1394-shared.jar` | Shared classes — loaded by both server & client |
+   | `datatype-astm-e1394-server.jar` | Server classes (serializer, batch adaptor, etc.) |
+   | `datatype-astm-e1394-client.jar` | Client classes (settings panel) |
+   | `plugin.xml` | Unified plugin metadata |
+   | **`datatype-astm-e1394-extension.zip`** | **Upload-ready zip (see below)** |
 
-Environment overrides:
+### Install into Mirth Connect — Method 1: Upload zip (recommended)
 
-| Variable       | Purpose                                           |
-|----------------|---------------------------------------------------|
-| `MIRTH_LIBS`   | Override the `../mirth-libs` base path.          |
-| `JAVAC_OPTS`   | Pass additional `javac` flags (e.g. `-Xlint`).    |
-| `SKIP_TESTS=1` | Skip test compilation and execution.              |
+This is the easiest method and uses Mirth's built-in extension uploader.
 
-Install into Mirth Connect:
+1. Run `distribution/build.sh` (see above).
+2. Locate the file `out/datatype-astm-e1394-extension.zip`.
+3. Open Mirth Administrator → **Extensions** → **Upload Extension**.
+4. Select `datatype-astm-e1394-extension.zip`.
+5. Click **OK** — Mirth extracts the zip and installs the extension.
+6. **Restart Mirth Connect service** (critical — extensions load at startup).
+
+The extension zip contains exactly:
+
+```
+datatype-astm-e1394-extension.zip
+    ├── plugin.xml
+    ├── datatype-astm-e1394-shared.jar
+    ├── datatype-astm-e1394-server.jar
+    └── datatype-astm-e1394-client.jar
+```
+
+All files at the zip root (no subdirectories). This is the format Mirth's
+extension uploader expects.
+
+### Install into Mirth Connect — Method 2: Manual copy
 
 ```bash
 mkdir -p $MIRTH_HOME/extensions/datatype-astm-e1394
@@ -201,20 +226,34 @@ cp out/plugin.xml $MIRTH_HOME/extensions/datatype-astm-e1394/plugin.xml
 # Restart Mirth Connect service.
 ```
 
-The build produces four output artifacts. The naming convention follows
-Mirth Connect 4.5.x's built-in data-type plugins (e.g. `datatype-hl7v2-*`,
-`datatype-dicom-*`):
+### Verify installation
 
-| Artifact | Contents |
-|----------|----------|
-| `datatype-astm-e1394-shared.jar` | Shared classes (`ASTME1394Constants`) — loaded by both server & client classloaders |
-| `datatype-astm-e1394-server.jar` | Server classes (serializer, batch adaptor, auto-responder, etc.) |
-| `datatype-astm-e1394-client.jar` | Client classes (settings panel, client plugin) |
-| `plugin.xml` | Unified plugin metadata file (standalone, not inside any JAR) |
+After restarting Mirth Connect:
 
-The extension folder name **must** match the `path` attribute in
-`plugin.xml` (`datatype-astm-e1394`). Mirth's plugin loader uses the
-folder name to locate the JARs declared in the `<library>` elements.
+1. Open Mirth Administrator.
+2. **Extensions** → you should see "ASTM E1394 Data Type" in the list.
+3. Create a new channel → Source tab → Data Type dropdown should show
+   "ASTM E1394".
+
+### Troubleshooting
+
+**"500 Server Error" on JNLP URL** (`/webstart/extensions/datatype-astm-e1394.jnlp`):
+
+This means the Mirth server couldn't generate the Java Web Start descriptor
+for the extension. The most common causes are:
+
+1. **Missing JAR files** — all three JARs declared in `plugin.xml` must
+   exist in the extension folder. Check `$MIRTH_HOME/extensions/datatype-astm-e1394/`
+   contains `datatype-astm-e1394-shared.jar`, `-server.jar`, and `-client.jar`.
+2. **Folder name mismatch** — the folder name must match the `path`
+   attribute in `plugin.xml` exactly (`datatype-astm-e1394`).
+3. **Server not restarted** — Mirth only loads extensions at startup.
+   Always restart after installing.
+4. **Uploaded the wrong zip** — the source-code zip (from this project)
+   is NOT the same as the extension zip. You must run `build.sh` first
+   to produce `out/datatype-astm-e1394-extension.zip`, then upload THAT.
+
+Check `$MIRTH_HOME/logs/mirth.log` for the actual server-side exception.
 
 ## Canonical XML format
 

@@ -1,4 +1,4 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.shared;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -7,14 +7,12 @@ import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 
-import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394Constants;
 import com.mirth.connect.donkey.model.message.BatchRawMessage;
 import com.mirth.connect.donkey.server.channel.SourceConnector;
-import com.mirth.connect.donkey.server.message.batch.BatchAdaptor;
 import com.mirth.connect.donkey.server.message.batch.BatchAdaptorFactory;
-import com.mirth.connect.donkey.server.message.batch.BatchMessageException;
 import com.mirth.connect.donkey.server.message.batch.BatchMessageSource;
 import com.mirth.connect.model.datatype.SerializerProperties;
+import com.mirth.connect.server.message.DebuggableBatchAdaptor;
 
 /**
  * ASTM E1394 batch adaptor.
@@ -30,23 +28,14 @@ import com.mirth.connect.model.datatype.SerializerProperties;
  *   <li>{@code NONE} — the entire batch is passed through as a single message.</li>
  * </ul>
  *
- * <p><b>API note (Mirth 4.5.x):</b> The {@link BatchAdaptor} contract changed
- * significantly across Mirth 4.x micro versions:</p>
- * <ul>
- *   <li>The abstract method to implement is {@code protected String getNextMessage(int i)}.}
- *      — the {@code int} parameter is a 0-based counter incremented by the
- *      framework on each call.</li>
- *   <li>The {@code batchMessageSource} field may or may not exist on the
- *      parent class, and the method to read from it varies ({@code getNextMessage()},
- *      {@code read()}, {@code next()}, etc.).</li>
- *   <li>{@link BatchRawMessage} may or may not expose a {@code getMessageSource()}
- *      method.</li>
- * </ul>
- * <p>To remain source-compatible across all Mirth 4.x versions, this class
- * uses reflection for all parent-field access and message-source reads. The
- * reflection calls are cached and have minimal overhead on the hot path.</p>
+ * <p><b>API note (Mirth 4.5.x):</b> The {@link DebuggableBatchAdaptor} contract
+ * requires implementing {@code protected String getNextMessage(int i)} — the
+ * {@code int} parameter is a 0-based counter incremented by the framework on
+ * each call. The {@code batchMessageSource} field on the parent class is
+ * accessed via reflection to remain source-compatible across Mirth 4.x
+ * micro versions.</p>
  */
-public class ASTME1394BatchAdaptor extends BatchAdaptor {
+public class ASTME1394BatchAdaptor extends DebuggableBatchAdaptor {
 
     private static final Logger logger = Logger.getLogger(ASTME1394BatchAdaptor.class);
 
@@ -252,13 +241,12 @@ public class ASTME1394BatchAdaptor extends BatchAdaptor {
     }
 
     /**
-     * Read a protected/private field from the {@link BatchAdaptor} parent
-     * class using reflection. Returns {@code null} if the field doesn't exist
-     * or is inaccessible.
+     * Read a protected/private field from the parent class using reflection.
+     * Returns {@code null} if the field doesn't exist or is inaccessible.
      */
     private Object readParentField(String fieldName) {
         try {
-            java.lang.reflect.Field f = BatchAdaptor.class.getDeclaredField(fieldName);
+            java.lang.reflect.Field f = DebuggableBatchAdaptor.class.getDeclaredField(fieldName);
             f.setAccessible(true);
             return f.get(this);
         } catch (NoSuchFieldException e) {

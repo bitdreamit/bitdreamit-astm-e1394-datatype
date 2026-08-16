@@ -2,6 +2,11 @@ package com.bitdreamit.connect.plugins.datatypes.astm.server;
 
 import java.io.InputStream;
 
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394AutoResponder;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394BatchAdaptorFactory;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394BatchStreamReader;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394DataTypeDelegate;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394ResponseValidator;
 import com.mirth.connect.donkey.server.channel.SourceConnector;
 import com.mirth.connect.donkey.server.message.AutoResponder;
 import com.mirth.connect.donkey.server.message.ResponseValidator;

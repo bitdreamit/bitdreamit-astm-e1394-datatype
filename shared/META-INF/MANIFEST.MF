@@ -1,12 +1,13 @@
 Manifest-Version: 1.0
-Created-By: datatype-astm-e1394 v1.1.7
+Created-By: datatype-astm-e1394 v1.2.0
 Implementation-Title: ASTM E1394 Data Type (shared)
-Implementation-Version: 1.1.7
+Implementation-Version: 1.2.0
 Implementation-Vendor: Bit Dream IT
 Implementation-URL: https://bitdreamit.com
 Specification-Title: ASTM E1394-91/97
 Specification-Version: E1394
 Mirth-Connect-Plugin-Type: SHARED
 Mirth-Connect-Plugin-Name: ASTM E1394
-Mirth-Connect-Plugin-Version: 1.1.7
+Mirth-Connect-Plugin-Version: 1.2.0
 Mirth-Connect-Compatible-Versions: 4.0.0+
+

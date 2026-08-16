@@ -40,7 +40,7 @@ JAR="${JAR:-jar}"
 JAVA_BIN="${JAVA_BIN:-java}"
 
 # Version (mirrors plugin.xml pluginVersion + ASTME1394Constants.PLUGIN_VERSION).
-PLUGIN_VERSION="1.1.7"
+PLUGIN_VERSION="1.2.0"
 
 # Colors for status output (disabled when not a TTY).
 if [ -t 1 ]; then
@@ -113,9 +113,17 @@ mkdir -p "$BUILD_DIR/shared" "$BUILD_DIR/server" "$BUILD_DIR/client" "$BUILD_DIR
 
 # ---------------------------------------------------------------------------
 # Compile shared module
+#
+# The shared module contains ALL the data-type logic classes (serializer,
+# batch adaptor, properties, auto-responder, response validator, etc.)
+# — mirroring HL7v2's architecture where shared.jar holds everything
+# except the server/client entry-point plugins. Because these classes
+# reference server-side APIs (DebuggableBatchAdaptor, IMessageSerializer,
+# etc.), the shared module needs the SERVER classpath to compile.
 # ---------------------------------------------------------------------------
 log "Compiling shared module"
 "$JAVAC" $JAVAC_OPTS -encoding UTF-8 -d "$BUILD_DIR/shared" \
+    -cp "$SERVER_CP" \
     -sourcepath "$PROJECT_DIR/shared/src" \
     $(find "$PROJECT_DIR/shared/src" -name '*.java')
 
@@ -134,7 +142,7 @@ log "Compiling server module"
 # ---------------------------------------------------------------------------
 log "Compiling client module"
 "$JAVAC" $JAVAC_OPTS -encoding UTF-8 \
-    -cp "$BUILD_DIR/shared:$CLIENT_CP" \
+    -cp "$BUILD_DIR/shared:$CLIENT_CP:$SERVER_CP" \
     -d "$BUILD_DIR/client" \
     -sourcepath "$PROJECT_DIR/client/src" \
     $(find "$PROJECT_DIR/client/src" -name '*.java')
@@ -246,6 +254,27 @@ log "Copying unified plugin.xml: $PLUGIN_XML"
 cp "$PROJECT_DIR/server/resources/plugin.xml" "$PLUGIN_XML"
 
 # ---------------------------------------------------------------------------
+# Create upload-ready extension .zip
+#
+# Mirth Connect's "Upload Extension" feature expects a .zip with:
+#   - plugin.xml  (at the root of the zip)
+#   - *.jar       (at the root of the zip)
+#
+# No subdirectories, no source code, no .iml files — just plugin.xml + JARs.
+# ---------------------------------------------------------------------------
+EXTENSION_ZIP="$OUT_DIR/datatype-astm-e1394-extension.zip"
+log "Creating upload-ready extension zip: $EXTENSION_ZIP"
+rm -f "$EXTENSION_ZIP"
+(
+    cd "$OUT_DIR"
+    zip -j "$EXTENSION_ZIP" \
+        "$(basename "$PLUGIN_XML")" \
+        "$(basename "$SHARED_JAR")" \
+        "$(basename "$SERVER_JAR")" \
+        "$(basename "$CLIENT_JAR")"
+) || fatal "Failed to create extension zip"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 log "Build complete."
@@ -255,8 +284,15 @@ echo "  $SHARED_JAR"
 echo "  $SERVER_JAR"
 echo "  $CLIENT_JAR"
 echo "  $PLUGIN_XML"
+echo "  $EXTENSION_ZIP   ← upload this to Mirth Administrator"
 echo
-echo "Install into Mirth Connect:"
+echo "Method 1 — Upload via Mirth Administrator (recommended):"
+echo "  1. Open Mirth Administrator"
+echo "  2. Extensions → Upload Extension"
+echo "  3. Select: $EXTENSION_ZIP"
+echo "  4. Restart Mirth Connect service"
+echo
+echo "Method 2 — Manual install:"
 echo "  mkdir -p \$MIRTH_HOME/extensions/datatype-astm-e1394"
 echo "  cp $SHARED_JAR  \$MIRTH_HOME/extensions/datatype-astm-e1394/"
 echo "  cp $SERVER_JAR  \$MIRTH_HOME/extensions/datatype-astm-e1394/"

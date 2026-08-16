@@ -10,12 +10,12 @@ import org.junit.Test;
 import org.w3c.dom.Document;
 import static org.junit.Assert.*;
 
-import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394BatchAdaptor;
-import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394BatchProperties;
-import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394DeserializationProperties;
-import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394Deserializer;
-import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394SerializationProperties;
-import com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394Serializer;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394BatchAdaptor;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394BatchProperties;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394DeserializationProperties;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394Deserializer;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394SerializationProperties;
+import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394Serializer;
 
 /**
  * Round-trip and feature tests for the ASTM E1394 data type plugin.

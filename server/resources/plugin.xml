@@ -1,34 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  Unified plugin.xml — follows the exact Mirth Connect 4.5.x convention
-  used by the built-in HL7v2 / DICOM / EDI data-type plugins.
-
-  Folder layout when installed in $MIRTH_HOME/extensions/:
-
-    $MIRTH_HOME/extensions/datatype-astm-e1394/
-        ├── plugin.xml
-        ├── datatype-astm-e1394-shared.jar
-        ├── datatype-astm-e1394-server.jar
-        └── datatype-astm-e1394-client.jar
-
-  The build script copies this file to the output directory and installs
-  it as plugin.xml (not .server / .client) in the extension folder.
--->
 <pluginMetaData path="datatype-astm-e1394"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="plugin.xsd">
     <name>ASTM E1394 Data Type</name>
     <author>Bit Dream IT</author>
-    <pluginVersion>1.1.7</pluginVersion>
+    <pluginVersion>1.2.0</pluginVersion>
     <mirthVersion>4.5.2</mirthVersion>
     <url>https://bitdreamit.com</url>
-    <description>ASTM E1394-91/97 record-level parser/serializer (H/P/O/R/C/Q/M/L). Transport-agnostic; pairs with the ASTM E1381 transmission-mode plugin for full TCP/serial framing support. Includes header-delimiter derivation, escape sequence handling, batch splitting on H..L boundaries, configurable auto-responder, and response validation.</description>
+    <description>ASTM E1394-91/97 record-level parser/serializer (H/P/O/R/C/Q/M/L).</description>
     <serverClasses>
         <string>com.bitdreamit.connect.plugins.datatypes.astm.server.ASTME1394DataTypeServerPlugin</string>
     </serverClasses>
     <clientClasses>
         <string>com.bitdreamit.connect.plugins.datatypes.astm.client.ASTME1394DataTypeClientPlugin</string>
     </clientClasses>
+    <templateClassName>com.bitdreamit.connect.plugins.datatypes.astm.client.ASTME1394DataTypeCodeTemplatePlugin</templateClassName>
     <library type="CLIENT" path="datatype-astm-e1394-client.jar" />
     <library type="SHARED" path="datatype-astm-e1394-shared.jar" />
     <library type="SERVER" path="datatype-astm-e1394-server.jar" />

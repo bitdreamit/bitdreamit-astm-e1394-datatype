@@ -1,4 +1,4 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.shared;
 
 import com.bitdreamit.connect.plugins.datatypes.astm.shared.ASTME1394Constants;
 import com.mirth.connect.donkey.model.message.SerializationType;

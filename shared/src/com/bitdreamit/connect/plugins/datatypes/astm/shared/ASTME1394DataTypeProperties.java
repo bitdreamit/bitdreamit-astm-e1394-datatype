@@ -1,4 +1,4 @@
-package com.bitdreamit.connect.plugins.datatypes.astm.server;
+package com.bitdreamit.connect.plugins.datatypes.astm.shared;
 
 import com.mirth.connect.donkey.util.DonkeyElement;
 import com.mirth.connect.model.datatype.DataTypeProperties;
@@ -49,13 +49,19 @@ public class ASTME1394DataTypeProperties extends DataTypeProperties {
     @Override public void migrate3_3_0(DonkeyElement element) {}
     @Override public void migrate3_4_0(DonkeyElement element) {}
     @Override public void migrate3_5_0(DonkeyElement element) {}
+    @Override public void migrate3_6_0(DonkeyElement element) {}
+    @Override public void migrate3_7_0(DonkeyElement element) {}
+    @Override public void migrate3_9_0(DonkeyElement element) {}
+    @Override public void migrate3_11_0(DonkeyElement element) {}
+    @Override public void migrate3_11_1(DonkeyElement element) {}
+    @Override public void migrate3_12_0(DonkeyElement element) {}
 
     // -----------------------------------------------------------------
     // Purgable — aggregate purged properties from all nested groups.
     // -----------------------------------------------------------------
     @Override
     @SuppressWarnings("unchecked")
-    public Map<String, Object> getPurgedProperties() {
+    public Map getPurgedProperties() {
         Map<String, Object> purged = new HashMap<String, Object>();
         if (serializationProperties != null) {
             purged.putAll(serializationProperties.getPurgedProperties());

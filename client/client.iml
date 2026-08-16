@@ -11,5 +11,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="shared" exported="" />
     <orderEntry type="library" name="mirth-client" level="project" exported="" />
+    <orderEntry type="library" name="mirth-server" level="project" exported="" />
   </component>
 </module>
