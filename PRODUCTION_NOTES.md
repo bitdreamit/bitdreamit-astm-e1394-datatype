@@ -1,14 +1,70 @@
-# Production Notes — bitdreamit-astm-e1394-datatype v1.1.2
+# Production Notes — bitdreamit-astm-e1394-datatype v1.1.3
 
 This document records the production-grade fixes applied to the original
 v1.0.0 source tree. The original codebase had multiple critical inconsistencies
 that prevented compilation, broke round-trip serialization, and shipped with
 an unsafe build script. v1.1.0 resolved the parser / serializer / build
 issues; v1.1.1 fixed the first round of Mirth 4.x API mismatches;
-v1.1.2 fixes the remaining compile errors reported against a stock
-Mirth Connect 4.5.2 distribution and restructures the build to produce
-three separate JARs (shared / server / client) plus a standalone
-unified `plugin.xml`.
+v1.1.2 fixed additional Mirth 4.5.2 API mismatches and restructured the
+build to produce three separate JARs; v1.1.3 fixes the
+`MessageSerializer` abstract-method issue and adds IntelliJ IDEA build
+artifact configurations.
+
+## v1.1.3 — MessageSerializer interface + IntelliJ artifacts
+
+### 34. `ASTME1394Serializer` — missing `MessageSerializer` abstract methods
+
+The `IMessageSerializer` interface extends the abstract class
+`com.mirth.connect.donkey.model.message.MessageSerializer`, which declares
+two additional abstract methods that every serializer must implement:
+
+* `void populateMetaData(String message, Map<String, Object> map) throws MessageSerializerException`
+* `String transformWithoutSerializing(String message, MessageSerializer serializer) throws MessageSerializerException`
+
+The v1.1.2 code did not implement these, causing javac to reject the class
+with "is not abstract and does not override abstract method
+populateMetaData".
+
+**Fix**: added both methods with the exact parent signatures (including
+`throws MessageSerializerException`):
+
+* `populateMetaData` — delegates to `getMetaDataFromMessage` and merges
+  the result into the supplied map. This populates the message metadata
+  used by Mirth's router / filter steps.
+* `transformWithoutSerializing` — returns `null` to signal that
+  serialization IS always required (consistent with
+  `isSerializationRequired` returning `true`).
+
+### 35. IntelliJ IDEA build artifacts
+
+Added three IntelliJ IDEA artifact configurations under
+`.idea/artifacts/`:
+
+| Artifact name | Output JAR | Contents |
+|---------------|-----------|----------|
+| `astm-shared` | `bitdreamit-astm-e1394-datatype-shared.jar` | Shared module classes only |
+| `astm-server` | `bitdreamit-astm-e1394-datatype-server.jar` | Server module classes only |
+| `astm-client` | `bitdreamit-astm-e1394-datatype-client.jar` | Client module classes only |
+
+Each artifact includes:
+* The module's compiled `.class` output
+* A JAR manifest from `<module>/META-INF/MANIFEST.MF` (with version metadata)
+
+**Usage in IntelliJ IDEA:**
+
+| Action | What it does |
+|--------|-------------|
+| **Build → Build Project** (Ctrl+F9) | Compiles all four modules (shared → server → client → test) |
+| **Build → Build Artifacts → astm-shared** | Builds `shared.jar` |
+| **Build → Build Artifacts → astm-server** | Builds `server.jar` |
+| **Build → Build Artifacts → astm-client** | Builds `client.jar` |
+| **Build → Build Artifacts → All** | Builds all three JARs |
+
+Output location: `out/artifacts/<artifact-name>/`
+
+---
+
+
 
 ## v1.1.2 — Mirth Connect 4.5.2 API alignment
 

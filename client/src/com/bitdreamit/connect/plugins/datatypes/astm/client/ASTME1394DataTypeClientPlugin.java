@@ -112,6 +112,11 @@ public class ASTME1394DataTypeClientPlugin extends DataTypeClientPlugin {
     // Settings panel — registered in the Administrator UI "Settings" tab.
     // ------------------------------------------------------------------
 
+    @Override
+    public AbstractSettingsPanel getSettingsPanel() {
+        return new ASTME1394DataTypeSettingsPanel("ASTM E1394 Settings");
+    }
+
     /**
      * Display name shown on the Administrator UI settings tab.
      */

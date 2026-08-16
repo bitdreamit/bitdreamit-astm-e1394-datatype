@@ -3,11 +3,11 @@ package com.bitdreamit.connect.plugins.datatypes.astm.server;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.mirth.connect.donkey.model.message.MessageSerializer;
-import com.mirth.connect.donkey.model.message.MessageSerializerException;
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 
+import com.mirth.connect.donkey.model.message.MessageSerializer;
+import com.mirth.connect.donkey.model.message.MessageSerializerException;
 import com.mirth.connect.model.converters.IMessageSerializer;
 import com.mirth.connect.model.datatype.SerializerProperties;
 
@@ -28,13 +28,22 @@ import com.mirth.connect.model.datatype.SerializerProperties;
  * {@code toJSON} / {@code fromJSON} methods return {@code null} (per the
  * {@link IMessageSerializer} contract for unsupported formats).</p>
  *
- * <p><b>Exception handling:</b> In Mirth Connect 4.x the
- * {@link IMessageSerializer} interface methods do not declare any checked
- * exceptions (the legacy {@code MessageSerializerException} type was
- * removed). All parser / serializer failures are therefore wrapped into a
- * {@link RuntimeException} so they propagate through Mirth's transformer
- * pipeline as unchecked errors, matching the behaviour of the built-in
- * HL7v2 / XML / JSON serializers.</p>
+ * <p><b>Inheritance chain (Mirth 4.5.x):</b></p>
+ * <pre>
+ *   com.mirth.connect.donkey.model.message.MessageSerializer  (abstract class)
+ *     └─ declares: populateMetaData(String, Map)  [abstract]
+ *     └─ declares: transformWithoutSerializing(String, MessageSerializer)  [abstract]
+ *
+ *   com.mirth.connect.model.converters.IMessageSerializer  (interface)
+ *     └─ extends MessageSerializer
+ *     └─ declares: toXML, fromXML, toJSON, fromJSON, isSerializationRequired,
+ *                  getMetaDataFromMessage  [all abstract]
+ * </pre>
+ *
+ * <p>So {@code implements IMessageSerializer} pulls in <b>both</b> the
+ * interface methods <b>and</b> the abstract-class methods from
+ * {@link MessageSerializer}. All eight abstract methods must be
+ * implemented.</p>
  */
 public class ASTME1394Serializer implements IMessageSerializer {
 
@@ -57,6 +66,10 @@ public class ASTME1394Serializer implements IMessageSerializer {
         this.serProps   = serProps   != null ? serProps   : new ASTME1394SerializationProperties();
         this.deserProps = deserProps != null ? deserProps : new ASTME1394DeserializationProperties();
     }
+
+    // ------------------------------------------------------------------
+    // IMessageSerializer methods (inbound / outbound conversion)
+    // ------------------------------------------------------------------
 
     @Override
     public String toXML(String source) {
@@ -137,15 +150,64 @@ public class ASTME1394Serializer implements IMessageSerializer {
         return true;
     }
 
+    // ------------------------------------------------------------------
+    // MessageSerializer abstract-class methods
+    // (inherited via IMessageSerializer extends MessageSerializer)
+    // ------------------------------------------------------------------
+
+    /**
+     * Populate the supplied metadata map with key/value pairs extracted from
+     * the inbound message. Called by Mirth's framework after deserialization
+     * to attach metadata to the {@code MessageObject} for routing / filtering.
+     *
+     * <p>Delegates to {@link #getMetaDataFromMessage(String)} and merges the
+     * result into the supplied map.</p>
+     *
+     * @param message the raw inbound message text
+     * @param map     the metadata map to populate (never {@code null})
+     * @throws MessageSerializerException if metadata extraction fails
+     *                                    (per the parent contract)
+     */
     @Override
-    public String transformWithoutSerializing(String s, MessageSerializer messageSerializer) throws MessageSerializerException {
-        return "";
+    public void populateMetaData(String message, Map<String, Object> map) throws MessageSerializerException {
+        if (message == null || map == null) {
+            return;
+        }
+        try {
+            Map<String, Object> meta = getMetaDataFromMessage(message);
+            if (meta != null) {
+                map.putAll(meta);
+            }
+        } catch (Exception e) {
+            throw new MessageSerializerException("Failed to populate ASTM E1394 metadata", e);
+        }
     }
 
+    /**
+     * Fast-path transformation that skips XML serialization.
+     *
+     * <p>Called by Mirth's framework when
+     * {@link #isSerializationRequired(boolean)} returns {@code false}. Since
+     * this serializer always returns {@code true} from that method, the
+     * framework will never call this method. Returning {@code null} signals
+     * "serialization IS required — please call {@code toXML} / {@code fromXML}
+     * normally".</p>
+     *
+     * @param message            the raw message text
+     * @param messageSerializer  another serializer to delegate to (unused)
+     * @return {@code null} — always require full serialization
+     * @throws MessageSerializerException per the parent contract (never thrown)
+     */
     @Override
-    public void populateMetaData(String s, Map<String, Object> map) {
-
+    public String transformWithoutSerializing(String message, MessageSerializer messageSerializer) throws MessageSerializerException {
+        // Returning null tells the framework: "please serialize normally".
+        return null;
     }
+
+    // ------------------------------------------------------------------
+    // Metadata extraction (used by both getMetaDataFromMessage and
+    // populateMetaData)
+    // ------------------------------------------------------------------
 
     /**
      * Extract metadata from an inbound ASTM E1394 message. Returns the

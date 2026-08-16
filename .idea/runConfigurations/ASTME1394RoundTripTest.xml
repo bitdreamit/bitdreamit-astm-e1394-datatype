@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ASTME1394RoundTripTest" type="JUnit" factoryName="JUnit" nameIsGenerated="true">
+    <module name="test" />
+    <option name="PACKAGE_NAME" value="com.bitdreamit.connect.plugins.datatypes.astm.test" />
+    <option name="MAIN_CLASS_NAME" value="com.bitdreamit.connect.plugins.datatypes.astm.test.ASTME1394RoundTripTest" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="class" />
+    <option name="VM_PARAMETERS" value="-ea" />
+    <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -62,6 +62,8 @@ bitdreamit-astm-e1394-datatype/
    ../mirth-libs/server/mirth-core.jar
    ../mirth-libs/client/mirth-client.jar
    ../mirth-libs/client/mirth-core.jar
+   ../mirth-libs/client/miglayout-swing-4.2.jar    (optional — for MirthCheckBox / MirthTextField)
+   ../mirth-libs/client/log4j-1.2-api-2.17.2.jar   (optional)
    ../mirth-libs/test/junit-4.13.2.jar
    ../mirth-libs/test/hamcrest-core-1.3.jar
    ```
@@ -71,7 +73,56 @@ bitdreamit-astm-e1394-datatype/
 3. The four modules `shared`, `server`, `client`, `test` load automatically
    from their respective `.iml` files.
 
-4. `Build → Build Project` (Ctrl + F9).
+## Building in IntelliJ IDEA
+
+There are two ways to build the project:
+
+### Option A: Build Project (compile only)
+
+**Build → Build Project** (Ctrl+F9) — compiles all four modules
+(`shared → server → client → test`) into `.class` files.
+
+Output goes to `out/production/<module>/`.
+
+This does NOT produce JAR files — use Option B for that.
+
+### Option B: Build Artifacts (produce JARs)
+
+**Build → Build Artifacts...** — shows a popup with four options:
+
+| Artifact | Output JAR | Contents |
+|----------|-----------|----------|
+| `astm-shared` | `bitdreamit-astm-e1394-datatype-shared.jar` | Shared module classes only |
+| `astm-server` | `bitdreamit-astm-e1394-datatype-server.jar` | Server module classes only |
+| `astm-client` | `bitdreamit-astm-e1394-datatype-client.jar` | Client module classes only |
+| **All** | (builds all three above) | All three JARs |
+
+Select an individual artifact to build just that JAR, or select **All**
+to build all three at once.
+
+Output goes to `out/artifacts/<artifact-name>/`.
+
+Each JAR includes a manifest from `<module>/META-INF/MANIFEST.MF` with
+version metadata (Implementation-Title, Implementation-Version,
+Mirth-Connect-Plugin-Type, etc.).
+
+### Running tests in IntelliJ
+
+A JUnit run configuration `ASTME1394RoundTripTest` is pre-configured.
+Right-click it in the Run toolbar (or press Shift+F10) to run the test.
+
+### Build artifacts vs. production build script
+
+| Feature | IntelliJ Artifacts | `distribution/build.sh` |
+|---------|-------------------|------------------------|
+| Produces JARs | Yes | Yes |
+| Produces standalone `plugin.xml` | No | Yes |
+| Runs tests | No (use Run config) | Yes (unless `SKIP_TESTS=1`) |
+| Includes version manifests | Yes | Yes |
+| Cross-platform | IntelliJ only | Any Unix with JDK |
+
+For development, use IntelliJ artifacts. For production deployment, use
+`distribution/build.sh`.
 
 ## Build & deploy
 

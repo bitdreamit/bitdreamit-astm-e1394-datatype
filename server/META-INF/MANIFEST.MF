@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Created-By: bitdreamit-astm-e1394-datatype v1.1.2
+Implementation-Title: ASTM E1394 Data Type (server)
+Implementation-Version: 1.1.2
+Implementation-Vendor: Bit Dream IT
+Implementation-URL: https://bitdreamit.com
+Specification-Title: ASTM E1394-91/97
+Specification-Version: E1394
+Mirth-Connect-Plugin-Type: SERVER
+Mirth-Connect-Plugin-Name: ASTM E1394
+Mirth-Connect-Plugin-Version: 1.1.2
+Mirth-Connect-Compatible-Versions: 4.0.0+
