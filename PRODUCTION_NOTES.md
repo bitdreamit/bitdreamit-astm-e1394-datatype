@@ -1,4 +1,4 @@
-# Production Notes — bitdreamit-astm-e1394-datatype v1.1.4
+# Production Notes — bitdreamit-astm-e1394-datatype v1.1.5
 
 This document records the production-grade fixes applied to the original
 v1.0.0 source tree. The original codebase had multiple critical inconsistencies
@@ -8,8 +8,77 @@ issues; v1.1.1 fixed the first round of Mirth 4.x API mismatches;
 v1.1.2 fixed additional Mirth 4.5.2 API mismatches and restructured the
 build to produce three separate JARs; v1.1.3 fixed the
 `MessageSerializer` abstract-method issue and added IntelliJ IDEA build
-artifact configurations; v1.1.4 fixes three more compile errors reported
-against Mirth 4.5.2.
+artifact configurations; v1.1.4 fixed three more compile errors;
+v1.1.5 fixes the IntelliJ module dependency issue that prevented the test
+module from finding the Mirth server classes.
+
+## v1.1.5 — IntelliJ module dependency fix
+
+### 39. Test module could not find Mirth server classes
+
+**Symptom:** Compiling the `test` module in IntelliJ IDEA produced
+cascading errors:
+
+```
+cannot find symbol  class ASTME1394Serializer
+cannot access com.mirth.connect.model.datatype.DeserializationProperties
+    class file for ...DeserializationProperties not found
+cannot access com.mirth.connect.model.datatype.BatchProperties
+    class file for ...BatchProperties not found
+cannot access com.mirth.connect.donkey.server.message.batch.BatchAdaptor
+    class file for ...BatchAdaptor not found
+```
+
+**Root cause:** In IntelliJ IDEA, module dependencies are NOT transitive
+by default. The `test` module depended on the `server` module, and the
+`server` module depended on the `mirth-server` project library (which
+contains `mirth-server.jar`, `donkey-server.jar`, etc.). However, the
+`mirth-server` library was NOT marked as `exported` in `server.iml`, so
+the `test` module did not inherit it.
+
+This caused a cascading failure:
+
+1. `ASTME1394DeserializationProperties` extends `DeserializationProperties`
+   (in `mirth-server.jar`).
+2. The test module referenced `ASTME1394DeserializationProperties`, but
+   couldn't resolve its parent class `DeserializationProperties`.
+3. javac therefore couldn't fully resolve `ASTME1394DeserializationProperties`.
+4. Which meant `ASTME1394Serializer` (which uses it) also couldn't be resolved.
+5. The import `import ...ASTME1394Serializer` failed with "cannot find symbol".
+
+**Fix:** Two changes were applied:
+
+1. **`server.iml`** — marked the `mirth-server` library as `exported=""`
+   so any module depending on `server` transitively gets the Mirth server
+   jars on its classpath. Also marked the `shared` module dependency as
+   `exported=""` for consistency.
+
+2. **`test.iml`** — added the `mirth-server` library directly as an
+   explicit dependency (belt-and-suspenders). This ensures the test
+   module always has the Mirth classes available, even if the export
+   configuration is accidentally changed in the future.
+
+The same `exported=""` treatment was applied to `client.iml` for the
+`mirth-client` library and `shared` module dependency.
+
+### 40. Library definition tolerated jar-name variations
+
+The `mirth_server.xml` and `mirth_client.xml` library definitions
+previously listed only one jar name per slot (e.g.
+`mirth-client-core.jar`). Different Mirth Connect distributions ship
+these jars under slightly different names (`mirth-core.jar` vs
+`mirth-client-core.jar`). IntelliJ shows a red error for any jar root
+that doesn't exist on disk, but the remaining roots still work.
+
+**Fix:** updated both library definitions to include both name variants
+plus additional optional jars (`log4j-api`, `log4j-core`, `swingx`,
+`miglayout-swing`). IntelliJ will show red X marks on whichever jars
+the user doesn't have, but the compilation will succeed using the jars
+that are present.
+
+---
+
+
 
 ## v1.1.4 — Final Mirth 4.5.2 compile-error fixes
 
