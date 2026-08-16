@@ -15,7 +15,13 @@ import org.syntax.jedit.tokenmarker.TokenMarker;
  * {@link DataTypeClientPlugin} with matching signatures (raw types where
  * the parent uses raw types, protected visibility where the parent
  * declares protected, etc.).</p>
+ *
+ * <p>The {@code @SuppressWarnings("unchecked")} annotation silences the
+ * compiler warning about the raw {@link Class} return type on
+ * {@link #getVocabulary()} — the parent declares it raw, so we must
+ * match.</p>
  */
+@SuppressWarnings("unchecked")
 public class ASTME1394DataTypeClientPlugin extends DataTypeClientPlugin {
 
     public ASTME1394DataTypeClientPlugin(String name) {
@@ -43,7 +49,6 @@ public class ASTME1394DataTypeClientPlugin extends DataTypeClientPlugin {
     }
 
     @SuppressWarnings("rawtypes")
-    @Override
     public Class getVocabulary() {
         return null;
     }

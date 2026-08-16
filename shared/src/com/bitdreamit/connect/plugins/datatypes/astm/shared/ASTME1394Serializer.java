@@ -51,7 +51,16 @@ import com.mirth.connect.model.datatype.SerializerProperties;
  * / serializer failures are wrapped into {@link RuntimeException} so they
  * propagate through Mirth's transformer pipeline as unchecked errors,
  * matching the behaviour of the built-in HL7v2 / XML / JSON serializers.</p>
+ *
+ * <p><b>Raw types:</b> The parent {@link MessageSerializer} declares
+ * {@code populateMetaData} and {@code getMetaDataFromMessage} with raw
+ * {@link Map} parameters / return types (not {@code Map<String, Object>}).
+ * We match that exactly — using parameterized types would cause a compile
+ * error. The {@code @SuppressWarnings("unchecked")} annotation silences
+ * the resulting unchecked-conversion warnings, matching the behaviour of
+ * Mirth's built-in HL7v2 serializer ({@code ER7Serializer}).</p>
  */
+@SuppressWarnings("unchecked")
 public class ASTME1394Serializer implements IMessageSerializer {
 
     private static final Logger logger = Logger.getLogger(ASTME1394Serializer.class);
@@ -191,7 +200,6 @@ public class ASTME1394Serializer implements IMessageSerializer {
      * @param message the raw inbound message text
      * @param map     the metadata map to populate (never {@code null})
      */
-    @SuppressWarnings("unchecked")
     @Override
     public void populateMetaData(String message, Map map) {
         if (message == null || map == null) {
@@ -230,7 +238,6 @@ public class ASTME1394Serializer implements IMessageSerializer {
      * record-type letters observed in the message so Mirth's router /
      * filter steps can key off them.
      */
-    @SuppressWarnings("unchecked")
     @Override
     public Map getMetaDataFromMessage(String message) {
         Map<String, Object> meta = new LinkedHashMap<String, Object>();
